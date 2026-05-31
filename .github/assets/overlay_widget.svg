@@ -1,0 +1,133 @@
+<svg width="800" height="320" viewBox="0 0 800 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F26A4B"/>
+      <stop offset="100%" stop-color="#E05A38"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap');
+    .title-banner { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; fill: #8E8A83; text-transform: uppercase; letter-spacing: 0.08em; }
+    .widget-text { font-family: 'DM Sans', sans-serif; font-size: 11.5px; font-weight: 500; }
+    .widget-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 500; }
+    .overlay-title { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 600; fill: #8E8A83; }
+    .overlay-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 600; fill: #8E8A83; text-transform: uppercase; letter-spacing: 0.05em; }
+    .overlay-text { font-family: 'DM Sans', sans-serif; font-size: 11px; fill: #E8E3DA; }
+    .btn-text { font-family: 'DM Sans', sans-serif; font-size: 10.5px; font-weight: 600; }
+  </style>
+
+  <!-- Base Canvas Background -->
+  <rect width="800" height="320" rx="8" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+
+  <!-- Divider Line -->
+  <line x1="400" y1="20" x2="400" y2="300" stroke="#2C2C2C" stroke-dasharray="4 4" opacity="0.6"/>
+
+  <!-- LEFT COLUMN: WIDGET STATES -->
+  <text x="32" y="36" class="title-banner">Floating Widget States</text>
+
+  <!-- 1. Idle Pill -->
+  <g transform="translate(32, 54)">
+    <rect width="140" height="36" rx="18" fill="rgba(16,16,16,0.94)" stroke="rgba(50,50,50,0.95)" stroke-width="0.5" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.3))"/>
+    <g transform="translate(10, 9)">
+      <rect width="18" height="18" rx="5" fill="#141414" stroke="#2C2C2C" stroke-width="0.5"/>
+      <svg x="4" y="4" width="10" height="10" viewBox="0 0 48 46" fill="none">
+        <path fill="url(#logoGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
+      </svg>
+    </g>
+    <text x="36" y="22" class="widget-text" fill="#8E8A83">MeshUtility</text>
+    <text x="110" y="22" class="widget-badge" fill="#3A3A3A">Alt</text>
+    <text x="150" y="22" font-family="'DM Sans', sans-serif" font-size="10px" fill="#3A3A3A">Idle</text>
+  </g>
+
+  <!-- 2. Listening Pill -->
+  <g transform="translate(32, 102)">
+    <rect x="-4" y="-4" width="208" height="44" rx="22" fill="none" stroke="#F26A4B" stroke-width="0.75" opacity="0.2"/>
+    <rect width="200" height="36" rx="18" fill="rgba(16,16,16,0.94)" stroke="#F26A4B" stroke-width="1.2" filter="url(#glow)"/>
+    <circle cx="18" cy="18" r="4.5" fill="#F26A4B"/>
+    <rect x="32" y="13" width="2" height="10" rx="1" fill="#F26A4B" opacity="0.6"/>
+    <rect x="37" y="10" width="2" height="16" rx="1" fill="#F26A4B"/>
+    <rect x="42" y="15" width="2" height="6" rx="1" fill="#F26A4B" opacity="0.4"/>
+    <rect x="47" y="11" width="2" height="14" rx="1" fill="#F26A4B" opacity="0.8"/>
+    <text x="58" y="22" class="widget-text" fill="#F26A4B" font-weight="600">Listening</text>
+    <text x="122" y="22" class="widget-badge" fill="rgba(242,106,75,0.5)">2.4s</text>
+    <text x="210" y="22" font-family="'DM Sans', sans-serif" font-size="10px" fill="#3A3A3A">Recording</text>
+  </g>
+
+  <!-- 3. Transcribing Pill -->
+  <g transform="translate(32, 150)">
+    <rect width="140" height="36" rx="18" fill="rgba(16,16,16,0.94)" stroke="#D1CFC0" stroke-width="0.5"/>
+    <circle cx="20" cy="18" r="6" stroke="#2C2C2C" stroke-width="1.5" fill="none"/>
+    <path d="M20 12 A6 6 0 0 1 26 18" stroke="#D1CFC0" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <text x="36" y="22" class="widget-text" fill="#D1CFC0">Transcribing</text>
+    <text x="150" y="22" font-family="'DM Sans', sans-serif" font-size="10px" fill="#3A3A3A">Processing</text>
+  </g>
+
+  <!-- 4. Injected Pill -->
+  <g transform="translate(32, 198)">
+    <rect width="140" height="36" rx="18" fill="rgba(16,16,16,0.94)" stroke="#4ADE80" stroke-width="0.5"/>
+    <svg x="12" y="11" width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2.5 7L5.5 10L11.5 4" stroke="#4ADE80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <text x="34" y="22" class="widget-text" fill="#4ADE80">Injected</text>
+    <text x="150" y="22" font-family="'DM Sans', sans-serif" font-size="10px" fill="#3A3A3A">Success</text>
+  </g>
+
+  <!-- 5. Circle Mode Mini Widget -->
+  <g transform="translate(32, 246)">
+    <circle cx="18" cy="18" r="18" fill="rgba(16,16,16,0.94)" stroke="rgba(50,50,50,0.95)" stroke-width="0.5" filter="drop-shadow(0 4px 12px rgba(0,0,0,0.3))"/>
+    <g transform="translate(9, 9)">
+      <rect width="18" height="18" rx="5" fill="#141414" stroke="#2C2C2C" stroke-width="0.5"/>
+      <svg x="4" y="4" width="10" height="10" viewBox="0 0 48 46" fill="none">
+        <path fill="url(#logoGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
+      </svg>
+    </g>
+    <text x="50" y="22" font-family="'DM Sans', sans-serif" font-size="11.5px" fill="#8E8A83">Compact Circle Mode</text>
+  </g>
+
+
+  <!-- RIGHT COLUMN: OVERLAY WINDOW -->
+  <text x="432" y="36" class="title-banner">Floating Overlay Window</text>
+
+  <g transform="translate(432, 54)">
+    <rect width="336" height="230" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1" filter="drop-shadow(0 12px 32px rgba(0,0,0,0.6))"/>
+    
+    <rect width="336" height="32" fill="#101010" rx="10"/>
+    <rect y="20" width="336" height="12" fill="#101010"/>
+    <line x1="0" y1="32" x2="336" y2="32" stroke="#2C2C2C" stroke-width="1"/>
+    
+    <text x="14" y="20" class="overlay-title">MeshPrompt Overlay</text>
+    <circle cx="316" cy="16" r="4" fill="#EF4444" opacity="0.8"/>
+
+    <!-- Content Area -->
+    <g transform="translate(14, 44)">
+      <rect width="308" height="54" rx="6" fill="#101010" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="10" y="16" class="overlay-eyebrow">Captured Text</text>
+      <text x="10" y="36" class="overlay-text" fill="#8E8A83">"fix the bug where data doesnt save on logout"</text>
+    </g>
+
+    <g transform="translate(14, 110)">
+      <rect width="76" height="20" rx="5" fill="rgba(242, 106, 75, 0.08)" stroke="rgba(242, 106, 75, 0.2)" stroke-width="1"/>
+      <text x="38" y="13.5" class="btn-text" fill="#F26A4B" text-anchor="middle">Enhance</text>
+      
+      <rect x="82" width="68" height="20" rx="5" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="116" y="13.5" class="btn-text" fill="#8E8A83" text-anchor="middle">Concise</text>
+      
+      <rect x="156" width="68" height="20" rx="5" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="190" y="13.5" class="btn-text" fill="#8E8A83" text-anchor="middle">Grammar</text>
+    </g>
+
+    <g transform="translate(14, 142)">
+      <rect width="308" height="28" rx="6" fill="#101010" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="10" y="18" font-family="'DM Sans', sans-serif" font-size="10.5px" fill="#3A3A3A">Context details... (Optional)</text>
+    </g>
+
+    <g transform="translate(14, 184)">
+      <rect width="308" height="30" rx="6" fill="#F26A4B"/>
+      <text x="154" y="19" class="btn-text" fill="#FFFFFF" font-size="11.5px" font-weight="700" text-anchor="middle">Enhance Text</text>
+    </g>
+  </g>
+</svg>

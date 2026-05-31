@@ -1,0 +1,312 @@
+<svg width="800" height="540" viewBox="0 0 800 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Logo Gradient -->
+    <linearGradient id="logoGrad" x1="0" y1="0" x2="48" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F26A4B"/>
+      <stop offset="100%" stop-color="#E05A38"/>
+    </linearGradient>
+  </defs>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Instrument+Serif&amp;display=swap');
+    .title-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; fill: #8E8A83; letter-spacing: 0.12em; }
+    .side-eyebrow { font-family: 'DM Sans', sans-serif; font-size: 9.5px; font-weight: 700; fill: #8E8A83; letter-spacing: 0.08em; text-transform: uppercase; }
+    .side-btn { font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 500; }
+    .card-label { font-family: 'DM Sans', sans-serif; font-size: 11px; fill: #8E8A83; }
+    .card-val { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 600; fill: #E8E3DA; }
+    .mono-text { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: #8E8A83; }
+    .body-text { font-family: 'DM Sans', sans-serif; font-size: 13px; fill: #E8E3DA; }
+    .italic-title { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 20px; fill: #E8E3DA; }
+  </style>
+
+  <!-- Window Frame -->
+  <rect width="800" height="540" rx="8" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+
+  <!-- Title bar -->
+  <rect width="800" height="40" fill="#101010"/>
+  <line x1="0" y1="40" x2="800" y2="40" stroke="#2C2C2C" stroke-width="1"/>
+
+  <!-- Title bar content -->
+  <g transform="translate(320, 11)">
+    <!-- Logo Rounded Box -->
+    <rect width="18" height="18" rx="5" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+    <!-- Logo SVG scaled inside 18x18 -->
+    <svg x="3.5" y="3.5" width="11" height="11" viewBox="0 0 48 46" fill="none">
+      <path fill="url(#logoGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
+    </svg>
+    <text x="26" y="13" class="title-text">MeshUtility Suite</text>
+  </g>
+
+  <!-- Window dots (right) -->
+  <circle cx="738" cy="20" r="5" fill="#3a3a3a"/>
+  <circle cx="754" cy="20" r="5" fill="#3a3a3a"/>
+  <circle cx="770" cy="20" r="5" fill="#EF4444" opacity="0.8"/>
+
+  <!-- Sidebar -->
+  <rect x="0" y="40" width="210" height="500" fill="#101010"/>
+  <line x1="210" y1="40" x2="210" y2="540" stroke="#2C2C2C" stroke-width="1"/>
+
+  <!-- Sidebar Navigation -->
+  <!-- Group: Voice Dictation -->
+  <text x="20" y="72" class="side-eyebrow">Voice Dictation</text>
+
+  <!-- Nav: Dictation History (Active) -->
+  <g transform="translate(8, 80)">
+    <rect width="194" height="30" rx="6" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+    <!-- Icon history -->
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#E8E3DA" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#E8E3DA">Dictation History</text>
+  </g>
+
+  <!-- Nav: Custom Dictionary -->
+  <g transform="translate(8, 114)">
+    <rect width="194" height="30" rx="6" fill="transparent" stroke="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Custom Dictionary</text>
+  </g>
+
+  <!-- Group: Prompt Enhancer -->
+  <text x="20" y="172" class="side-eyebrow">Prompt Enhancer</text>
+
+  <!-- Nav: Enhance Prompt -->
+  <g transform="translate(8, 180)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9.828 3h3.982m-3.982 4h2.982M3 21l9-9m1.12-1.12a1.5 1.5 0 112.12-2.12l-2.12 2.12zm1.41-5.66a5 5 0 11-7.07 7.07l7.07-7.07z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Enhance Prompt</text>
+  </g>
+
+  <!-- Nav: Prompt Actions -->
+  <g transform="translate(8, 214)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.286L13 21l-2.286-5.714L5 12l5.714-2.286L13 3z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Prompt Actions</text>
+  </g>
+
+  <!-- Nav: Action History -->
+  <g transform="translate(8, 248)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Action History</text>
+  </g>
+
+  <!-- Group: Configuration -->
+  <text x="20" y="304" class="side-eyebrow">Configuration</text>
+
+  <!-- Nav: Voice Settings -->
+  <g transform="translate(8, 312)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Voice Settings</text>
+  </g>
+
+  <!-- Nav: AI Providers -->
+  <g transform="translate(8, 346)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8 11a3 3 0 11-6 0 3 3 0 016 0zm0 0v.18a2 2 0 00.586 1.414l6.586 6.586a1 1 0 001.414 0l1.586-1.586a1 1 0 000-1.414l-1.086-1.086a1 1 0 01-.293-.707V15a1 1 0 00-1-1h-1.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 0010 11.18V11z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">AI Providers</text>
+  </g>
+
+  <!-- Nav: Enhancer Settings -->
+  <g transform="translate(8, 380)">
+    <rect width="194" height="30" rx="6" fill="transparent"/>
+    <svg x="12" y="7" width="15" height="15" fill="none" stroke="#8E8A83" stroke-width="1.8" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31(2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+    <text x="36" y="19" class="side-btn" fill="#8E8A83">Enhancer Settings</text>
+  </g>
+
+  <!-- Sidebar Footer Meta Box -->
+  <line x1="0" y1="438" x2="210" y2="438" stroke="#2C2C2C" stroke-width="1"/>
+  <g transform="translate(12, 452)">
+    <!-- Container -->
+    <rect width="186" height="74" rx="10" fill="rgba(255, 255, 255, 0.015)" stroke="#2C2C2C" stroke-width="1"/>
+    
+    <!-- Logo Row -->
+    <g transform="translate(10, 10)">
+      <!-- Rounded Logo Wrapper -->
+      <rect width="26" height="26" rx="6" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <svg x="4.5" y="4.5" width="17" height="17" viewBox="0 0 48 46" fill="none">
+        <path fill="url(#logoGrad)" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" />
+      </svg>
+      <!-- Title -->
+      <text x="36" y="17" font-family="'DM Sans', sans-serif" font-size="12px" font-weight="600" fill="#E8E3DA">MeshUtility</text>
+      <!-- Version -->
+      <rect x="134" y="3" width="34" height="15" rx="7" fill="rgba(242, 106, 75, 0.08)" stroke="rgba(242, 106, 75, 0.2)" stroke-width="1"/>
+      <text x="151" y="13" font-family="'JetBrains Mono', monospace" font-size="8.5px" font-weight="500" fill="#F26A4B" text-anchor="middle">v2.4</text>
+    </g>
+
+    <!-- Status Row -->
+    <g transform="translate(10, 44)">
+      <!-- Pill bg -->
+      <rect width="166" height="19" rx="6" fill="rgba(16, 185, 129, 0.08)" stroke="rgba(16, 185, 129, 0.2)" stroke-width="1"/>
+      <!-- Pulsing Dot -->
+      <circle cx="16" cy="9.5" r="3.5" fill="#10B981" opacity="0.4"/>
+      <circle cx="16" cy="9.5" r="2" fill="#10B981"/>
+      <!-- Label -->
+      <text x="28" y="13" font-family="'DM Sans', sans-serif" font-size="9.5px" font-weight="500" fill="#10B981">Local Whisper active</text>
+    </g>
+  </g>
+
+  <!-- Right Content Area (Voice History Dashboard) -->
+  <!-- Header Row -->
+  <g transform="translate(232, 58)">
+    <circle cx="4" cy="-5" r="4" fill="#10B981"/>
+    <text x="14" y="0" class="italic-title">MeshVoice</text>
+  </g>
+
+  <!-- Engine toggle (Right of header) -->
+  <g transform="translate(674, 46)">
+    <!-- Base pill -->
+    <rect width="102" height="24" rx="7" fill="#1C1C1C"/>
+    <!-- Active Pill Local -->
+    <rect x="2" y="2" width="49" height="20" rx="5" fill="#222222" stroke="#2C2C2C" stroke-width="1"/>
+    <!-- Local Active Text -->
+    <text x="26.5" y="15" font-family="'DM Sans', sans-serif" font-size="10.5px" font-weight="600" fill="#E8E3DA" text-anchor="middle">Local</text>
+    <!-- Cloud Inactive Text -->
+    <text x="76.5" y="15" font-family="'DM Sans', sans-serif" font-size="10.5px" font-weight="500" fill="#8E8A83" text-anchor="middle">Cloud</text>
+  </g>
+
+  <!-- Stats Grid -->
+  <g transform="translate(232, 88)">
+    <!-- Card 1 -->
+    <g transform="translate(0, 0)">
+      <rect width="128" height="54" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="12" y="18" class="card-label">Total words</text>
+      <text x="12" y="40" class="card-val" fill="#F26A4B">4,821</text>
+    </g>
+    <!-- Card 2 -->
+    <g transform="translate(140, 0)">
+      <rect width="128" height="54" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="12" y="18" class="card-label">Minutes spoken</text>
+      <text x="12" y="40" class="card-val">15.4m</text>
+    </g>
+    <!-- Card 3 -->
+    <g transform="translate(280, 0)">
+      <rect width="128" height="54" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="12" y="18" class="card-label">Sessions</text>
+      <text x="12" y="40" class="card-val">128</text>
+    </g>
+    <!-- Card 4 -->
+    <g transform="translate(420, 0)">
+      <rect width="124" height="54" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="12" y="18" class="card-label">Avg WPM</text>
+      <text x="12" y="40" class="card-val">135</text>
+    </g>
+  </g>
+
+  <!-- History section title -->
+  <g transform="translate(232, 172)">
+    <text x="0" y="0" class="side-eyebrow">History <tspan fill="#2C2C2C" font-weight="500">(2/10)</tspan></text>
+    <!-- Delete all btn -->
+    <rect x="476" y="-12" width="68" height="18" rx="5" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+    <text x="510" y="0" font-family="'DM Sans', sans-serif" font-size="10px" font-weight="500" fill="#8E8A83" text-anchor="middle">Delete all</text>
+  </g>
+
+  <!-- History Items List -->
+  <!-- Item 1 -->
+  <g transform="translate(232, 188)">
+    <rect width="544" height="154" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+    
+    <!-- Item 1 Header -->
+    <text x="16" y="24" class="mono-text" fill="#8E8A83">May 31, 5:05 PM</text>
+    <!-- Header Actions (Copy, Dict, Delete icons) -->
+    <g transform="translate(460, 10)">
+      <!-- Copy -->
+      <rect width="20" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <svg x="5" y="5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8E8A83" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <!-- Dict -->
+      <rect x="26" width="22" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="37" y="13" font-family="'DM Sans', sans-serif" font-size="9px" font-weight="600" fill="#8E8A83" text-anchor="middle">Dict</text>
+      <!-- Trash -->
+      <rect x="54" width="20" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <svg x="59" y="5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8E8A83" stroke-width="2">
+        <polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </g>
+
+    <!-- Transcribed Text -->
+    <text x="16" y="50" class="body-text" font-weight="400">"Let's schedule the design review for next Thursday at 3pm."</text>
+    
+    <!-- Meta tags row -->
+    <g transform="translate(16, 70)">
+      <rect width="26" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="13" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">9w</text>
+      <rect x="32" width="34" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="49" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">2.1s</text>
+      <rect x="72" width="36" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="90" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">local</text>
+    </g>
+
+    <!-- Player box -->
+    <g transform="translate(16, 96)">
+      <rect width="512" height="42" rx="8" fill="#222222" stroke="#2C2C2C" stroke-width="1"/>
+      <!-- Play circle btn -->
+      <circle cx="28" cy="21" r="13" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <!-- Play triangle -->
+      <path d="M26 17 L32 21 L26 25 Z" fill="#8E8A83"/>
+      <!-- Progress Bar Track -->
+      <rect x="52" y="19" width="392" height="4" rx="2" fill="#1C1C1C"/>
+      <!-- Progress Fill -->
+      <rect x="52" y="19" width="156" height="4" rx="2" fill="#F26A4B"/>
+      <circle cx="208" cy="21" r="5" fill="#F26A4B"/>
+      <!-- Duration Text -->
+      <text x="496" y="24" class="mono-text" font-size="9px" text-anchor="end">0:02</text>
+    </g>
+  </g>
+
+  <!-- Item 2 -->
+  <g transform="translate(232, 356)">
+    <rect width="544" height="154" rx="10" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+    
+    <!-- Item 2 Header -->
+    <text x="16" y="24" class="mono-text" fill="#8E8A83">May 31, 4:50 PM</text>
+    <g transform="translate(460, 10)">
+      <rect width="20" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <svg x="5" y="5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8E8A83" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      <rect x="26" width="22" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="37" y="13" font-family="'DM Sans', sans-serif" font-size="9px" font-weight="600" fill="#8E8A83" text-anchor="middle">Dict</text>
+      <rect x="54" width="20" height="20" rx="4" fill="none" stroke="#2C2C2C" stroke-width="1"/>
+      <svg x="59" y="5" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8E8A83" stroke-width="2">
+        <polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </g>
+
+    <!-- Transcribed Text -->
+    <text x="16" y="50" class="body-text" font-weight="400">"Can you pull up the latest analytics dashboard and send me the link?"</text>
+    
+    <g transform="translate(16, 70)">
+      <rect width="28" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="14" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">13w</text>
+      <rect x="34" width="34" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="51" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">3.4s</text>
+      <rect x="74" width="36" height="14" rx="4" fill="#141414" stroke="#2C2C2C" stroke-width="1"/>
+      <text x="92" y="10" class="mono-text" font-size="8.5px" text-anchor="middle" fill="#8E8A83">local</text>
+    </g>
+
+    <g transform="translate(16, 96)">
+      <rect width="512" height="42" rx="8" fill="#222222" stroke="#2C2C2C" stroke-width="1"/>
+      <circle cx="28" cy="21" r="13" fill="#1C1C1C" stroke="#2C2C2C" stroke-width="1"/>
+      <path d="M26 17 L32 21 L26 25 Z" fill="#8E8A83"/>
+      <rect x="52" y="19" width="392" height="4" rx="2" fill="#1C1C1C"/>
+      <text x="496" y="24" class="mono-text" font-size="9px" text-anchor="end">0:03</text>
+    </g>
+  </g>
+</svg>
