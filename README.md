@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src=".github/assets/logo.svg" width="64" height="64" alt="MeshUtility Logo" />
+<img src=".github/assets/logo.png" width="64" height="64" alt="MeshUtility Logo" />
 
 # MeshUtility
 
