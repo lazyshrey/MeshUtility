@@ -1101,7 +1101,7 @@ async fn install_update(_app: AppHandle, download_url: String) -> Result<(), Str
 
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = app;
+        let _ = _app;
         return Err("Auto-updates are only supported on Windows.".to_string());
     }
 }
