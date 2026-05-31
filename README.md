@@ -12,7 +12,7 @@ Built with Tauri 2, React, and Rust. Works fully offline with local Whisper mode
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg?style=flat-square&labelColor=111&color=F26A4B)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-orange?style=flat-square&labelColor=111&color=F26A4B)](https://tauri.app)
-[![Version](https://img.shields.io/badge/Version-v1.0.0-orange?style=flat-square&labelColor=111&color=F26A4B)](https://github.com/Jenesh11/MeshUtility/releases)
+[![Version](https://img.shields.io/badge/Version-v1.0.1-orange?style=flat-square&labelColor=111&color=F26A4B)](https://github.com/Jenesh11/MeshUtility/releases)
 [![Platform](https://img.shields.io/badge/Platform-Windows-orange?style=flat-square&labelColor=111&color=F26A4B)](https://github.com/Jenesh11/MeshUtility/releases)
 
 </div>

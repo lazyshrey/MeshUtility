@@ -1269,7 +1269,7 @@ fn main() {
 
             // ── Consolidated System Tray ──
             {
-                let title_i = MenuItem::with_id(app, "title", "MeshUtility Suite v1.0.0", false, None::<&str>)?;
+                let title_i = MenuItem::with_id(app, "title", "MeshUtility Suite v1.0.1", false, None::<&str>)?;
                 let open_voice = MenuItem::with_id(app, "open_voice", "Open Dictation Suite", true, None::<&str>)?;
                 let open_prompt = MenuItem::with_id(app, "open_prompt", "Open Prompt Enhancer", true, None::<&str>)?;
                 let open_overlay = MenuItem::with_id(app, "open_overlay", "Open Prompt Overlay", true, None::<&str>)?;
