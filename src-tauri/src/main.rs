@@ -1,0 +1,1389 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod db;
+mod audio;
+mod transcription;
+mod injection;
+mod clipboard;
+
+use std::sync::{Arc, Mutex};
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
+
+use tauri::{
+    Manager, Emitter, PhysicalPosition, AppHandle, State, LogicalSize, Size,
+};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri_plugin_global_shortcut::{ShortcutState, GlobalShortcutExt, Shortcut};
+use arboard::Clipboard;
+use serde::{Deserialize, Serialize};
+
+const MAX_HISTORY: usize = 10;
+
+// ─── Shared State ────────────────────────────────────────────────────────────
+
+pub struct AppState {
+    pub is_recording:   Arc<Mutex<bool>>,
+    pub recording_session_id: Arc<Mutex<u64>>,
+    pub hotkey_down: Arc<Mutex<bool>>,
+    pub current_hotkey: Arc<Mutex<String>>,
+    pub rec_mode:       Arc<Mutex<String>>,
+    /// Path to the selected downloaded model file.
+    pub selected_model: Mutex<Option<String>>,
+    pub language_mode: Mutex<String>,
+}
+
+#[derive(Default)]
+struct RuntimeState {
+    paused: Mutex<bool>,
+    captured_len: Mutex<usize>,
+    is_terminal: Mutex<bool>,
+    captured_text: Mutex<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProviderSettings {
+    provider: String,
+    model: String,
+    base_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SettingsState {
+    provider: ProviderSettings,
+    shortcut: String,
+    close_to_tray: bool,
+    run_in_tray: bool,
+    launch_at_startup: bool,
+    restore_clipboard: bool,
+    history_enabled: bool,
+    sensitive_mode: bool,
+    timeout_ms: u64,
+    max_output_tokens: u32,
+    temperature: f32,
+    default_action_id: String,
+    paused: bool,
+    #[serde(default = "default_enhance_prompt_mode")]
+    enhance_prompt_mode: String,
+}
+
+fn default_enhance_prompt_mode() -> String {
+    "auto".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HistoryItem {
+    id: String,
+    action_id: String,
+    action_label: String,
+    provider: String,
+    model: String,
+    input: String,
+    output: String,
+    created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PromptAppStatePayload {
+    settings: SettingsState,
+    history: Vec<HistoryItem>,
+    key_status: BTreeMap<String, bool>,
+}
+
+fn default_settings() -> SettingsState {
+    SettingsState {
+        provider: ProviderSettings {
+            provider: "groq".to_string(),
+            model: "llama-3.1-8b-instant".to_string(),
+            base_url: None,
+        },
+        shortcut: "Ctrl+Shift+Space".to_string(),
+        close_to_tray: true,
+        run_in_tray: true,
+        launch_at_startup: true,
+        restore_clipboard: true,
+        history_enabled: true,
+        sensitive_mode: false,
+        timeout_ms: 60_000,
+        max_output_tokens: 1_800,
+        temperature: 0.35,
+        default_action_id: "enhance-prompt".to_string(),
+        paused: false,
+        enhance_prompt_mode: "auto".to_string(),
+    }
+}
+
+// ─── Path & Helpers ─────────────────────────────────────────────────────────
+
+fn app_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|err| format!("Failed to resolve app data directory: {err}"))?;
+    fs::create_dir_all(&dir).map_err(|err| format!("Failed to create app data directory: {err}"))?;
+    Ok(dir)
+}
+
+fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app_dir(app)?.join("settings.json"))
+}
+
+fn prompt_history_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(app_dir(app)?.join("history.json"))
+}
+
+fn keys_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app_dir(app)?.join("keys");
+    fs::create_dir_all(&dir).map_err(|err| format!("Failed to create key directory: {err}"))?;
+    Ok(dir)
+}
+
+fn key_path(app: &AppHandle, provider: &str) -> Result<PathBuf, String> {
+    let provider = provider.trim().to_lowercase();
+    if !provider_ids().contains(&provider.as_str()) {
+        return Err("Invalid provider id.".to_string());
+    }
+    Ok(keys_dir(app)?.join(format!("{provider}.bin")))
+}
+
+fn read_settings(app: &AppHandle) -> SettingsState {
+    let Ok(path) = settings_path(app) else {
+        return default_settings();
+    };
+    let Ok(raw) = fs::read_to_string(path) else {
+        return default_settings();
+    };
+    serde_json::from_str(&raw).unwrap_or_else(|_| default_settings())
+}
+
+fn write_settings(app: &AppHandle, settings: &SettingsState) -> Result<(), String> {
+    let path = settings_path(app)?;
+    let raw = serde_json::to_string_pretty(settings).map_err(|err| format!("Failed to encode settings: {err}"))?;
+    fs::write(path, raw).map_err(|err| format!("Failed to write settings: {err}"))
+}
+
+fn read_prompt_history(app: &AppHandle) -> Vec<HistoryItem> {
+    let Ok(path) = prompt_history_path(app) else {
+        return Vec::new();
+    };
+    let Ok(raw) = fs::read_to_string(path) else {
+        return Vec::new();
+    };
+    serde_json::from_str(&raw).unwrap_or_default()
+}
+
+fn write_prompt_history(app: &AppHandle, history: &[HistoryItem]) -> Result<(), String> {
+    let path = prompt_history_path(app)?;
+    let raw = serde_json::to_string_pretty(history).map_err(|err| format!("Failed to encode history: {err}"))?;
+    fs::write(path, raw).map_err(|err| format!("Failed to write history: {err}"))
+}
+
+fn read_provider_key(app: &AppHandle, provider: &str) -> Result<String, String> {
+    let encrypted = fs::read(key_path(app, provider)?).map_err(|err| format!("API key is not configured: {err}"))?;
+    let decrypted = decrypt_secret(&encrypted)?;
+    String::from_utf8(decrypted).map_err(|err| format!("Stored API key is invalid UTF-8: {err}"))
+}
+
+#[cfg(target_os = "windows")]
+fn encrypt_secret(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::{LocalFree, HLOCAL};
+    use windows::Win32::Security::Cryptography::{CryptProtectData, CRYPT_INTEGER_BLOB};
+
+    let mut input = CRYPT_INTEGER_BLOB {
+        cbData: bytes.len() as u32,
+        pbData: bytes.as_ptr() as *mut u8,
+    };
+    let mut output = CRYPT_INTEGER_BLOB::default();
+    unsafe {
+        CryptProtectData(&mut input, PCWSTR::null(), None, None, None, 0, &mut output)
+            .map_err(|err| format!("Failed to encrypt API key with Windows DPAPI: {err}"))?;
+        let encrypted = std::slice::from_raw_parts(output.pbData, output.cbData as usize).to_vec();
+        let _ = LocalFree(HLOCAL(output.pbData.cast()));
+        Ok(encrypted)
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn decrypt_secret(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    use windows::Win32::Foundation::{LocalFree, HLOCAL};
+    use windows::Win32::Security::Cryptography::{CryptUnprotectData, CRYPT_INTEGER_BLOB};
+
+    let mut input = CRYPT_INTEGER_BLOB {
+        cbData: bytes.len() as u32,
+        pbData: bytes.as_ptr() as *mut u8,
+    };
+    let mut output = CRYPT_INTEGER_BLOB::default();
+    unsafe {
+        CryptUnprotectData(&mut input, None, None, None, None, 0, &mut output)
+            .map_err(|err| format!("Failed to decrypt API key with Windows DPAPI: {err}"))?;
+        let decrypted = std::slice::from_raw_parts(output.pbData, output.cbData as usize).to_vec();
+        let _ = LocalFree(HLOCAL(output.pbData.cast()));
+        Ok(decrypted)
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn encrypt_secret(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    Ok(bytes.to_vec())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn decrypt_secret(bytes: &[u8]) -> Result<Vec<u8>, String> {
+    Ok(bytes.to_vec())
+}
+
+fn provider_ids() -> [&'static str; 7] {
+    ["xai", "openai", "anthropic", "gemini", "openrouter", "ollama", "groq"]
+}
+
+fn build_key_status(app: &AppHandle) -> BTreeMap<String, bool> {
+    provider_ids()
+        .iter()
+        .map(|provider| {
+            let exists = read_provider_key(app, provider).map(|key| !key.trim().is_empty()).unwrap_or(false);
+            ((*provider).to_string(), exists)
+        })
+        .collect()
+}
+
+// ─── Tauri Commands (MeshPrompt) ─────────────────────────────────────────────
+
+#[tauri::command]
+fn get_app_state(app: AppHandle) -> PromptAppStatePayload {
+    PromptAppStatePayload {
+        settings: read_settings(&app),
+        history: read_prompt_history(&app),
+        key_status: build_key_status(&app),
+    }
+}
+
+#[tauri::command]
+fn save_settings(app: AppHandle, state: State<RuntimeState>, settings: SettingsState) -> Result<(), String> {
+    let old_settings = read_settings(&app);
+    set_launch_at_startup(&app, settings.launch_at_startup)?;
+    if let Ok(mut paused) = state.paused.lock() {
+        *paused = settings.paused;
+    }
+    
+    // Live update shortcut registration if changed
+    if old_settings.shortcut != settings.shortcut {
+        if let Ok(old_sc) = normalize_shortcut(&old_settings.shortcut).parse::<tauri_plugin_global_shortcut::Shortcut>() {
+            let _ = app.global_shortcut().unregister(old_sc);
+        }
+        let _ = register_global_shortcut(&app);
+    }
+    
+    write_settings(&app, &settings)
+}
+
+#[tauri::command]
+fn save_provider_key(app: AppHandle, provider: String, api_key: String) -> Result<(), String> {
+    let provider = provider.trim().to_lowercase();
+    let api_key = api_key.trim().to_string();
+    if provider.is_empty() {
+        return Err("Provider is required.".to_string());
+    }
+    if api_key.is_empty() {
+        return Err("API key is required.".to_string());
+    }
+    let encrypted = encrypt_secret(api_key.as_bytes())?;
+    fs::write(key_path(&app, &provider)?, encrypted).map_err(|err| format!("Failed to save API key: {err}"))
+}
+
+#[tauri::command]
+fn get_provider_key(app: AppHandle, provider: String) -> Result<Option<String>, String> {
+    Ok(read_provider_key(&app, provider.trim()).ok())
+}
+
+#[tauri::command]
+fn delete_provider_key(app: AppHandle, provider: String) -> Result<(), String> {
+    match fs::remove_file(key_path(&app, provider.trim())?) {
+        Ok(_) => Ok(()),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(format!("Failed to delete API key: {err}")),
+    }
+}
+
+#[tauri::command]
+fn add_history(app: AppHandle, item: HistoryItem) -> Result<(), String> {
+    let settings = read_settings(&app);
+    if !settings.history_enabled || settings.sensitive_mode {
+        return Ok(());
+    }
+    let mut history = read_prompt_history(&app);
+    history.retain(|entry| entry.id != item.id);
+    history.insert(0, item);
+    history.truncate(MAX_HISTORY);
+    write_prompt_history(&app, &history)
+}
+
+#[tauri::command]
+fn clear_history(app: AppHandle) -> Result<(), String> {
+    write_prompt_history(&app, &[])
+}
+
+#[tauri::command]
+fn capture_selected_text(app: AppHandle) -> Result<String, String> {
+    let settings = read_settings(&app);
+    let captured = capture_selection(&settings)?;
+    let state = app.state::<RuntimeState>();
+    if let Ok(mut len) = state.captured_len.lock() {
+        *len = captured.chars().count();
+    }
+    if let Ok(mut term) = state.is_terminal.lock() {
+        *term = is_terminal_foreground();
+    }
+    if let Ok(mut cap_text) = state.captured_text.lock() {
+        *cap_text = captured.clone();
+    }
+    Ok(captured)
+}
+
+#[tauri::command]
+fn get_captured_text(state: State<RuntimeState>) -> String {
+    if let Ok(mut cap_text) = state.captured_text.lock() {
+        let val = cap_text.clone();
+        *cap_text = String::new();
+        val
+    } else {
+        String::new()
+    }
+}
+
+#[tauri::command]
+fn copy_text(text: String) -> Result<(), String> {
+    let mut clipboard = Clipboard::new().map_err(|err| format!("Clipboard unavailable: {err}"))?;
+    clipboard
+        .set_text(text)
+        .map_err(|err| format!("Failed to copy text: {err}"))
+}
+
+#[tauri::command]
+fn replace_selected_text(app: AppHandle, text: String) -> Result<(), String> {
+    let settings = read_settings(&app);
+    let state = app.state::<RuntimeState>();
+    let is_term = state.is_terminal.lock().map(|t| *t).unwrap_or(false);
+    let cap_len = state.captured_len.lock().map(|l| *l).unwrap_or(0);
+    paste_text(&text, settings.restore_clipboard, is_term, cap_len)
+}
+
+#[tauri::command]
+fn show_overlay(app: AppHandle) -> Result<(), String> {
+    show_overlay_window(&app)
+}
+
+#[tauri::command]
+fn hide_overlay(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("overlay") {
+        window.hide().map_err(|err| format!("Failed to hide overlay: {err}"))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn resize_overlay(app: AppHandle, width: f64, height: f64) -> Result<(), String> {
+    let window = app
+        .get_webview_window("overlay")
+        .ok_or_else(|| "Overlay window is unavailable.".to_string())?;
+    
+    window
+        .set_size(Size::Logical(LogicalSize::new(width, height)))
+        .map_err(|err| format!("Failed to size overlay: {err}"))?;
+
+    if let Ok(Some(monitor)) = window.primary_monitor() {
+        let scale_factor = monitor.scale_factor();
+        let area = monitor.work_area();
+        
+        let work_area_x = area.position.x as f64 / scale_factor;
+        let work_area_y = area.position.y as f64 / scale_factor;
+        let work_area_width = area.size.width as f64 / scale_factor;
+        let work_area_height = area.size.height as f64 / scale_factor;
+
+        let x = work_area_x + (work_area_width - width) / 2.0;
+        let y = work_area_y + work_area_height - height - 80.0;
+
+        let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn proxy_request(
+    url: String,
+    method: String,
+    headers: std::collections::HashMap<String, String>,
+    body: String,
+) -> Result<(u16, String), String> {
+    // ENFORCE API LOCK: Restrict Prompt Enhancer requests strictly to Groq
+    if !url.starts_with("https://api.groq.com/") {
+        return Err("Security Violation: Only Groq API is allowed for prompt enhancement.".to_string());
+    }
+
+    let client = reqwest::Client::new();
+    let mut req = match method.to_uppercase().as_str() {
+        "POST" => client.post(&url),
+        "GET" => client.get(&url),
+        "PUT" => client.put(&url),
+        "DELETE" => client.delete(&url),
+        _ => return Err(format!("Unsupported method: {}", method)),
+    };
+
+    for (k, v) in headers {
+        req = req.header(k, v);
+    }
+
+    if !body.is_empty() {
+        req = req.body(body);
+    }
+
+    let res = req.send().await.map_err(|e| e.to_string())?;
+    let status = res.status().as_u16();
+    let text = res.text().await.map_err(|e| e.to_string())?;
+
+    Ok((status, text))
+}
+
+#[tauri::command]
+fn set_paused(state: State<RuntimeState>, paused: bool) -> Result<(), String> {
+    let mut value = state.paused.lock().map_err(|_| "Shortcut state unavailable.".to_string())?;
+    *value = paused;
+    Ok(())
+}
+
+// ─── Input Automation ────────────────────────────────────────────────────────
+
+fn capture_selection(settings: &SettingsState) -> Result<String, String> {
+    crate::clipboard::GLOBAL_CLIPBOARD.capture_selection_transaction(settings.restore_clipboard)
+}
+
+fn paste_text(text: &str, restore_clipboard: bool, is_term: bool, cap_len: usize) -> Result<(), String> {
+    crate::clipboard::GLOBAL_CLIPBOARD.paste_text_transaction(text, restore_clipboard, is_term, cap_len)
+}
+
+#[cfg(target_os = "windows")]
+fn is_terminal_foreground() -> bool {
+    use windows::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetForegroundWindow};
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            return false;
+        }
+        let mut class_name = [0u16; 256];
+        let len = GetClassNameW(hwnd, &mut class_name);
+        if len > 0 {
+            let name = String::from_utf16_lossy(&class_name[..len as usize]).to_lowercase();
+            name.contains("console") || name.contains("terminal") || name.contains("cascadia") || name.contains("mintty")
+        } else {
+            false
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_terminal_foreground() -> bool {
+    false
+}
+
+// ─── Windows & Autostart Management ──────────────────────────────────────────
+
+#[tauri::command]
+async fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("main") {
+        w.show().map_err(|e| e.to_string())?;
+        w.set_focus().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+
+fn launched_from_autostart() -> bool {
+    std::env::args().any(|arg| arg == "--autostart")
+}
+
+#[cfg(target_os = "windows")]
+fn ensure_autostart_enabled() {
+    let exe = match std::env::current_exe() {
+        Ok(path) => path,
+        Err(_) => return,
+    };
+    let value = format!("\"{}\" --autostart", exe.display());
+    let mut command = std::process::Command::new("reg");
+    command.args([
+        "add",
+        r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+        "/v",
+        "MeshUtility",
+        "/t",
+        "REG_SZ",
+        "/d",
+        &value,
+        "/f",
+    ]);
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let _ = command.output();
+}
+
+#[cfg(not(target_os = "windows"))]
+fn ensure_autostart_enabled() {}
+
+fn set_launch_at_startup(_app: &AppHandle, enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+
+        let exe = std::env::current_exe().map_err(|err| format!("Failed to resolve executable path: {err}"))?;
+        let value = format!("\"{}\" --autostart", exe.display());
+        let mut command = Command::new("reg");
+        if enabled {
+            command.args([
+                "add",
+                r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                "/v",
+                "MeshUtility",
+                "/t",
+                "REG_SZ",
+                "/d",
+                &value,
+                "/f",
+            ]);
+        } else {
+            command.args([
+                "delete",
+                r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                "/v",
+                "MeshUtility",
+                "/f",
+            ]);
+        }
+        let output = command.creation_flags(CREATE_NO_WINDOW.0).output();
+        match output {
+            Ok(result) if result.status.success() || !enabled => Ok(()),
+            Ok(result) => Err(format!(
+                "Failed to update startup setting: {}",
+                String::from_utf8_lossy(&result.stderr)
+            )),
+            Err(err) => Err(format!("Failed to update startup setting: {err}")),
+        }
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = _app;
+        let _ = enabled;
+        Ok(())
+    }
+}
+
+fn position_widget_bottom_center(app: &tauri::AppHandle) {
+    let Some(widget) = app.get_webview_window("widget") else { return };
+
+    let monitor = (0..5).find_map(|attempt| {
+        if attempt > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(200));
+        }
+        widget.current_monitor().ok().flatten()
+            .or_else(|| app.primary_monitor().ok().flatten())
+    });
+
+    let Some(monitor) = monitor else {
+        let _ = widget.set_position(PhysicalPosition::new(864_i32, 992_i32));
+        return;
+    };
+
+    let monitor_position = monitor.position();
+    let monitor_size = monitor.size();
+    let widget_size = widget.outer_size().unwrap_or_else(|_| tauri::PhysicalSize::new(192, 56));
+    let x = monitor_position.x + ((monitor_size.width.saturating_sub(widget_size.width)) / 2) as i32;
+    let y = monitor_position.y + monitor_size.height.saturating_sub(widget_size.height + 32) as i32;
+    let _ = widget.set_position(PhysicalPosition::new(x, y));
+}
+
+fn show_overlay_window(app: &AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("overlay")
+        .ok_or_else(|| "Overlay window is unavailable.".to_string())?;
+
+    let width = 500.0;
+    let height = 230.0;
+    let _ = window.set_size(Size::Logical(LogicalSize::new(width, height)));
+    let _ = window.set_shadow(false);
+
+    if let Ok(Some(monitor)) = window.primary_monitor() {
+        let scale_factor = monitor.scale_factor();
+        let area = monitor.work_area();
+        
+        let work_area_x = area.position.x as f64 / scale_factor;
+        let work_area_y = area.position.y as f64 / scale_factor;
+        let work_area_width = area.size.width as f64 / scale_factor;
+        let work_area_height = area.size.height as f64 / scale_factor;
+
+        let x = work_area_x + (work_area_width - width) / 2.0;
+        let y = work_area_y + work_area_height - height - 80.0;
+
+        let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition::new(x, y)));
+    }
+
+    window.show().map_err(|err| format!("Failed to show overlay: {err}"))?;
+    window.set_focus().map_err(|err| format!("Failed to focus overlay: {err}"))?;
+    Ok(())
+}
+
+fn open_main_window(app: &AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window is unavailable.".to_string())?;
+    let _ = window.unminimize();
+    window.show().map_err(|err| format!("Failed to show main window: {err}"))?;
+    window.set_focus().map_err(|err| format!("Failed to focus main window: {err}"))?;
+    Ok(())
+}
+
+fn show_startup_windows(app: &tauri::AppHandle, autostart: bool) {
+    if autostart {
+        let app_clone = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(800));
+            position_widget_bottom_center(&app_clone);
+            if let Some(widget) = app_clone.get_webview_window("widget") {
+                let _ = widget.show();
+            }
+        });
+    } else {
+        position_widget_bottom_center(app);
+        if let Some(widget) = app.get_webview_window("widget") {
+            let _ = widget.show();
+            let _ = widget.set_focus();
+        }
+        if let Some(main) = app.get_webview_window("main") {
+            let _ = main.show();
+            let _ = main.set_focus();
+        }
+    }
+}
+
+// ─── Voice Engine Commands ───────────────────────────────────────────────────
+
+#[tauri::command]
+fn load_model(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    filename: String,
+) -> Result<(), String> {
+    if filename == "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8" {
+        if !transcription::parakeet_bundle_ready() {
+            return Err("Parakeet V3 model files are incomplete. Download Parakeet V3 again from Settings.".into());
+        }
+        *state.selected_model.lock().unwrap() = Some(transcription::parakeet_bundle_dir().to_string_lossy().to_string());
+        db::DB_CONN.lock().unwrap()
+            .execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('model',?)", [&filename]).ok();
+        let _ = app.emit("model-loaded", &filename);
+        return Ok(());
+    }
+
+    if !filename.ends_with(".bin") {
+        return Err("This model is not selectable by the local engine.".into());
+    }
+    let model_path = audio::models_dir().join(&filename);
+    if !model_path.exists() {
+        return Err(format!("Model file not found: {}", filename));
+    }
+    *state.selected_model.lock().unwrap() = Some(model_path.to_string_lossy().to_string());
+    db::DB_CONN.lock().unwrap()
+        .execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('model',?)", [&filename]).ok();
+    let _ = app.emit("model-loaded", &filename);
+    Ok(())
+}
+
+#[tauri::command]
+fn get_downloaded_models() -> Vec<String> {
+    let dir = audio::models_dir();
+    let mut models: Vec<String> = std::fs::read_dir(&dir).map(|rd| rd
+        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().to_string();
+            if (name.ends_with(".bin") || name.ends_with(".nemo") || name.ends_with(".safetensors")) && !name.contains(".part") {
+                let size = e.metadata().map(|m| m.len()).unwrap_or(0);
+                if size > 1_000_000 { Some(name) } else { None }
+            } else { None }
+        }).collect()
+    ).unwrap_or_default();
+    if transcription::parakeet_bundle_ready() && !models.iter().any(|m| m == "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8") {
+        models.push("sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8".into());
+    }
+    models
+}
+
+#[tauri::command]
+fn reregister_hotkey(app: tauri::AppHandle, new_hotkey: String) -> Result<(), String> {
+    let old_hotkey = db::get_setting("hotkey".to_string()).unwrap_or_else(|| "Alt+Space".to_string());
+    if let Ok(shortcut) = old_hotkey.parse::<Shortcut>() {
+        let _ = app.global_shortcut().unregister(shortcut);
+    }
+
+    db::DB_CONN.lock().unwrap()
+        .execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('hotkey',?)", [&new_hotkey]).ok();
+
+    let register_voice_res = app.global_shortcut().on_shortcut(new_hotkey.as_str(), move |app_handle, _shortcut, event| {
+        let state = app_handle.state::<AppState>();
+        let mode = state.rec_mode.lock().unwrap().clone();
+        match event.state() {
+            ShortcutState::Pressed => {
+                if mode == "toggle" {
+                    let rec = *state.is_recording.lock().unwrap();
+                    if rec { let _ = app_handle.emit("hotkey-released", ()); }
+                    else   { let _ = app_handle.emit("hotkey-pressed",  ()); }
+                } else {
+                    let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                    if !*hotkey_down {
+                        *hotkey_down = true;
+                        let _ = app_handle.emit("hotkey-pressed", ());
+                    }
+                }
+            }
+            ShortcutState::Released => {
+                if mode == "push-to-talk" {
+                    let app = app_handle.clone();
+                    std::thread::spawn(move || {
+                        std::thread::sleep(std::time::Duration::from_millis(70));
+                        let state = app.state::<AppState>();
+                        let hotkey = state.current_hotkey.lock().unwrap().clone();
+                        if hotkey_is_physically_down(&hotkey) {
+                            return;
+                        }
+
+                        let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                        if *hotkey_down {
+                            *hotkey_down = false;
+                            let _ = app.emit("hotkey-released", ());
+                        }
+                    });
+                }
+            }
+        }
+    });
+
+    if let Err(e) = register_voice_res {
+        return Err(format!("Failed to register voice hotkey: {}", e));
+    }
+
+    if let Some(state) = app.try_state::<AppState>() {
+        *state.current_hotkey.lock().unwrap() = new_hotkey.clone();
+        *state.hotkey_down.lock().unwrap() = false;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn set_recording_mode(
+    state: tauri::State<'_, AppState>,
+    mode: String,
+) -> Result<(), String> {
+    if mode != "push-to-talk" && mode != "toggle" {
+        return Err("Recording mode must be push-to-talk or toggle.".into());
+    }
+    *state.rec_mode.lock().unwrap() = mode.clone();
+    db::DB_CONN.lock().unwrap()
+        .execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('mode',?)", [&mode]).ok();
+    Ok(())
+}
+
+#[tauri::command]
+fn get_language_mode(state: tauri::State<'_, AppState>) -> String {
+    state.language_mode.lock().unwrap().clone()
+}
+
+#[tauri::command]
+fn set_language_mode(state: tauri::State<'_, AppState>, mode: String) -> Result<(), String> {
+    if !["auto", "en", "hi", "hinglish"].contains(&mode.as_str()) {
+        return Err(format!("Invalid language mode: {}", mode));
+    }
+    *state.language_mode.lock().unwrap() = mode.clone();
+    db::DB_CONN.lock().unwrap()
+        .execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('language_mode',?)", [&mode])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn virtual_key_for_hotkey_part(part: &str) -> Option<u16> {
+    match part.trim().to_ascii_lowercase().as_str() {
+        "ctrl" | "control" => Some(0x11),
+        "alt" | "option" => Some(0x12),
+        "shift" => Some(0x10),
+        "space" => Some(0x20),
+        "enter" | "return" => Some(0x0D),
+        "tab" => Some(0x09),
+        "escape" | "esc" => Some(0x1B),
+        key if key.len() == 1 => {
+            let b = key.as_bytes()[0];
+            if b.is_ascii_alphanumeric() {
+                Some(b.to_ascii_uppercase() as u16)
+            } else {
+                None
+            }
+        }
+        key if key.starts_with('f') => key[1..]
+            .parse::<u16>()
+            .ok()
+            .filter(|n| (1..=24).contains(n))
+            .map(|n| 0x70 + n - 1),
+        _ => None,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn hotkey_is_physically_down(hotkey: &str) -> bool {
+    use windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+
+    let keys = hotkey
+        .split('+')
+        .filter_map(virtual_key_for_hotkey_part)
+        .collect::<Vec<_>>();
+
+    if keys.is_empty() {
+        return false;
+    }
+
+    keys.into_iter().all(|key| {
+        let state = unsafe { GetAsyncKeyState(key as i32) };
+        (state as u16 & 0x8000) != 0
+    })
+}
+
+#[cfg(not(target_os = "windows"))]
+fn hotkey_is_physically_down(_hotkey: &str) -> bool {
+    false
+}
+
+// ─── Shortcuts (MeshPrompt) ──────────────────────────────────────────────────
+
+fn emit_capture(app: AppHandle) {
+    let state = app.state::<RuntimeState>();
+    if state.paused.lock().map(|paused| *paused).unwrap_or(false) {
+        return;
+    }
+
+    
+    let settings = read_settings(&app);
+    let term_active = is_terminal_foreground();
+    if let Ok(mut term) = state.is_terminal.lock() {
+        *term = term_active;
+    }
+    match capture_selection(&settings) {
+        Ok(text) => {
+            if let Ok(mut len) = state.captured_len.lock() {
+                *len = text.chars().count();
+            }
+            if let Ok(mut cap_text) = state.captured_text.lock() {
+                *cap_text = text.clone();
+            }
+            let _ = show_overlay_window(&app);
+            let _ = app.emit("meshprompt://captured-text", text);
+        }
+        Err(message) => {
+            if let Ok(mut cap_text) = state.captured_text.lock() {
+                *cap_text = "".to_string();
+            }
+            let _ = show_overlay_window(&app);
+            let _ = app.emit("meshprompt://capture-error", message);
+        }
+    }
+}
+
+fn normalize_shortcut(shortcut: &str) -> String {
+    shortcut
+        .replace("Ctrl", "CommandOrControl")
+        .replace(" ", "")
+        .replace("++", "+")
+}
+
+fn register_global_shortcut(app: &AppHandle) -> Result<(), String> {
+    let shortcut = normalize_shortcut(&read_settings(app).shortcut);
+    let app_for_handler = app.clone();
+    app
+        .global_shortcut()
+        .on_shortcut(shortcut.as_str(), move |_app, _shortcut, event| {
+            if event.state() == ShortcutState::Released {
+                let app_clone = app_for_handler.clone();
+                std::thread::spawn(move || {
+                    emit_capture(app_clone);
+                });
+            }
+        })
+        .map_err(|err| format!("Failed to register shortcut {shortcut}: {err}"))
+}
+
+// ─── Auto-Updates (MeshPrompt) ───────────────────────────────────────────────
+
+#[tauri::command]
+async fn check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> {
+    let client = reqwest::Client::builder()
+        .user_agent("MeshPilot-Updater")
+        .build()
+        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
+
+    let res = client
+        .get("https://api.github.com/repos/Jenesh11/MeshPilot-Releases/releases")
+        .send()
+        .await
+        .map_err(|e| format!("Network error checking for updates: {e}"))?;
+
+    if !res.status().is_success() {
+        return Err(format!("GitHub API returned error: {}", res.status()));
+    }
+
+    let releases: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse releases metadata: {e}"))?;
+
+    let releases_arr = releases.as_array().ok_or("Invalid releases list")?;
+
+    let mut meshutility_release = None;
+    for rel in releases_arr {
+        if let Some(tag) = rel["tag_name"].as_str() {
+            if tag.to_lowercase().starts_with("meshutility-") || tag.to_lowercase().starts_with("meshpilot-") {
+                meshutility_release = Some(rel);
+                break;
+            }
+        }
+    }
+
+    let release = meshutility_release.or_else(|| {
+        releases_arr.first().map(|r| r)
+    }).ok_or("No releases found")?;
+
+    let tag_name = release["tag_name"].as_str().ok_or("Invalid release tag")?.to_string();
+    let changelog = release["body"].as_str().unwrap_or("No release notes provided.").to_string();
+    
+    let current_version = app.package_info().version.to_string();
+    let update_available = is_newer_version(&current_version, &tag_name);
+
+    let mut download_url = String::new();
+    if let Some(assets) = release["assets"].as_array() {
+        for asset in assets {
+            if let Some(name) = asset["name"].as_str() {
+                let name_lower = name.to_lowercase();
+                if (name_lower.ends_with(".msi") || name_lower.ends_with(".exe")) && (name_lower.contains("meshutility") || name_lower.contains("meshpilot")) {
+                    if let Some(url) = asset["browser_download_url"].as_str() {
+                        download_url = url.to_string();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(UpdateCheckResult {
+        update_available,
+        version: tag_name,
+        changelog,
+        download_url,
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateCheckResult {
+    update_available: bool,
+    version: String,
+    changelog: String,
+    download_url: String,
+}
+
+fn get_version_numbers(s: &str) -> Vec<u32> {
+    if let Some(start_idx) = s.find(|c: char| c.is_ascii_digit()) {
+        let version_part = &s[start_idx..];
+        version_part
+            .split('.')
+            .map(|part| {
+                let digits: String = part.chars().take_while(|c| c.is_ascii_digit()).collect();
+                digits.parse::<u32>().unwrap_or(0)
+            })
+            .collect()
+    } else {
+        vec![0]
+    }
+}
+
+fn is_newer_version(current: &str, latest: &str) -> bool {
+    let c_nums = get_version_numbers(current);
+    let l_nums = get_version_numbers(latest);
+
+    for i in 0..std::cmp::max(c_nums.len(), l_nums.len()) {
+        let c_val = *c_nums.get(i).unwrap_or(&0);
+        let l_val = *l_nums.get(i).unwrap_or(&0);
+        if l_val > c_val {
+            return true;
+        } else if c_val > l_val {
+            return false;
+        }
+    }
+    false
+}
+
+#[tauri::command]
+async fn install_update(_app: AppHandle, download_url: String) -> Result<(), String> {
+    if download_url.is_empty() {
+        return Err("No download URL provided.".to_string());
+    }
+
+    let client = reqwest::Client::builder()
+        .user_agent("MeshPilot-Updater")
+        .build()
+        .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
+
+    let res = client
+        .get(&download_url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download update: {e}"))?;
+
+    if !res.status().is_success() {
+        return Err(format!("Download failed with status: {}", res.status()));
+    }
+
+    let bytes = res.bytes().await.map_err(|e| format!("Failed to read download stream: {e}"))?;
+    
+    let temp_dir = std::env::temp_dir();
+    let is_msi = download_url.to_lowercase().ends_with(".msi");
+    let file_name = if is_msi { "meshutility-setup.msi" } else { "meshutility-setup.exe" };
+    let installer_path = temp_dir.join(file_name);
+
+    fs::write(&installer_path, bytes).map_err(|e| format!("Failed to write installer file: {e}"))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+
+        let exe_path = std::env::current_exe().map_err(|e| format!("Failed to get current exe path: {e}"))?;
+        let exe_str = exe_path.to_str().ok_or("Invalid exe path")?;
+        let installer_str = installer_path.to_str().ok_or("Invalid installer path")?;
+
+        let script = if is_msi {
+            format!(
+                "Start-Sleep -Seconds 1; \
+                 $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList '/i', '\"{}\"', '/passive' -PassThru; \
+                 $p.WaitForExit(); \
+                 Start-Process -FilePath '{}'",
+                installer_str, exe_str
+            )
+        } else {
+            format!(
+                "Start-Sleep -Seconds 1; \
+                 $p = Start-Process -FilePath '{}' -ArgumentList '/S' -PassThru; \
+                 $p.WaitForExit(); \
+                 Start-Process -FilePath '{}'",
+                installer_str, exe_str
+            )
+        };
+
+        let mut cmd = Command::new("powershell.exe");
+        cmd.args(["-NoProfile", "-WindowStyle", "Hidden", "-Command", &script]);
+        cmd.creation_flags(CREATE_NO_WINDOW.0).spawn().map_err(|e| format!("Failed to launch installer: {e}"))?;
+        
+        std::process::exit(0);
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = app;
+        return Err("Auto-updates are only supported on Windows.".to_string());
+    }
+}
+
+
+// ─── Entry Point ─────────────────────────────────────────────────────────────
+
+fn main() {
+    tauri::Builder::default()
+        .manage(RuntimeState::default())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.show();
+                let _ = w.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_shell::init())
+        .setup(|app| {
+            db::init_db();
+            std::thread::spawn(ensure_autostart_enabled);
+            let autostart = launched_from_autostart();
+
+            // ── Auth Deep Link protocol scheme ──
+            use tauri_plugin_deep_link::DeepLinkExt;
+            let _ = app.deep_link().register("meshvoice");
+            let _ = app.deep_link().register("meshprompt");
+
+
+            let (saved_mode, saved_hotkey, saved_model_file, saved_language_mode) = {
+                let conn = db::DB_CONN.lock().unwrap();
+                let mode = conn.query_row("SELECT value FROM settings WHERE key='mode'", [], |r| r.get::<_,String>(0))
+                    .unwrap_or_else(|_| "push-to-talk".to_string());
+                let hotkey = conn.query_row("SELECT value FROM settings WHERE key='hotkey'", [], |r| r.get::<_,String>(0))
+                    .unwrap_or_else(|_| "Alt+Space".to_string());
+                let model = conn.query_row("SELECT value FROM settings WHERE key='model'", [], |r| r.get::<_,String>(0)).ok();
+                let language_mode = conn.query_row("SELECT value FROM settings WHERE key='language_mode'", [], |r| r.get::<_,String>(0))
+                    .unwrap_or_else(|_| "auto".to_string());
+                (mode, hotkey, model, language_mode)
+            };
+
+            let saved_model_path = saved_model_file.map(|f| {
+                if f == "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8" {
+                    transcription::parakeet_bundle_dir().to_string_lossy().to_string()
+                } else {
+                    audio::models_dir().join(&f).to_string_lossy().to_string()
+                }
+            }).filter(|p| std::path::Path::new(p).exists());
+
+            let is_recording = Arc::new(Mutex::new(false));
+            let recording_session_id = Arc::new(Mutex::new(0_u64));
+            let hotkey_down = Arc::new(Mutex::new(false));
+            let current_hotkey = Arc::new(Mutex::new(saved_hotkey.clone()));
+            let rec_mode     = Arc::new(Mutex::new(saved_mode));
+
+            app.manage(AppState {
+                is_recording:   is_recording.clone(),
+                recording_session_id,
+                hotkey_down,
+                current_hotkey,
+                rec_mode:       rec_mode.clone(),
+                selected_model: Mutex::new(saved_model_path),
+                language_mode: Mutex::new(saved_language_mode),
+            });
+
+            audio::start_level_emitter(app.handle().clone(), is_recording.clone());
+
+            // ── Dynamic Global Shortcuts Callback Injection ──
+            let voice_hotkey = saved_hotkey.clone();
+            let voice_reg_res = app.global_shortcut().on_shortcut(saved_hotkey.as_str(), move |app_handle, _shortcut, event| {
+                let state = app_handle.state::<AppState>();
+                let mode = state.rec_mode.lock().unwrap().clone();
+                match event.state() {
+                    ShortcutState::Pressed => {
+                        if mode == "toggle" {
+                            let rec = *state.is_recording.lock().unwrap();
+                            if rec { let _ = app_handle.emit("hotkey-released", ()); }
+                            else   { let _ = app_handle.emit("hotkey-pressed",  ()); }
+                        } else {
+                            let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                            if !*hotkey_down {
+                                *hotkey_down = true;
+                                let _ = app_handle.emit("hotkey-pressed", ());
+                            }
+                        }
+                    }
+                    ShortcutState::Released => {
+                        if mode == "push-to-talk" {
+                            let app = app_handle.clone();
+                            std::thread::spawn(move || {
+                                std::thread::sleep(std::time::Duration::from_millis(70));
+                                let state = app.state::<AppState>();
+                                let hotkey = state.current_hotkey.lock().unwrap().clone();
+                                if hotkey_is_physically_down(&hotkey) {
+                                    return;
+                                }
+
+                                let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                                if *hotkey_down {
+                                    *hotkey_down = false;
+                                    let _ = app.emit("hotkey-released", ());
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            if let Err(e) = voice_reg_res {
+                eprintln!("[MeshVoice] Failed to register global hotkey '{}': {}", voice_hotkey, e);
+                // Fallback to Ctrl+Alt+Space if Alt+Space fails
+                let fallback_hotkey = "Ctrl+Alt+Space";
+                let voice_reg_fallback = app.global_shortcut().on_shortcut(fallback_hotkey, move |app_handle, _shortcut, event| {
+                    let state = app_handle.state::<AppState>();
+                    let mode = state.rec_mode.lock().unwrap().clone();
+                    match event.state() {
+                        ShortcutState::Pressed => {
+                            if mode == "toggle" {
+                                let rec = *state.is_recording.lock().unwrap();
+                                if rec { let _ = app_handle.emit("hotkey-released", ()); }
+                                else   { let _ = app_handle.emit("hotkey-pressed",  ()); }
+                            } else {
+                                let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                                if !*hotkey_down {
+                                    *hotkey_down = true;
+                                    let _ = app_handle.emit("hotkey-pressed", ());
+                                }
+                            }
+                        }
+                        ShortcutState::Released => {
+                            if mode == "push-to-talk" {
+                                let app = app_handle.clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_millis(70));
+                                    let state = app.state::<AppState>();
+                                    let hotkey = state.current_hotkey.lock().unwrap().clone();
+                                    if hotkey_is_physically_down(&hotkey) {
+                                        return;
+                                    }
+
+                                    let mut hotkey_down = state.hotkey_down.lock().unwrap();
+                                    if *hotkey_down {
+                                        *hotkey_down = false;
+                                        let _ = app.emit("hotkey-released", ());
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+                if let Err(err) = voice_reg_fallback {
+                    eprintln!("[MeshVoice] Failed to register fallback hotkey '{}': {}", fallback_hotkey, err);
+                } else {
+                    println!("[MeshVoice] Fallback hotkey '{}' registered successfully.", fallback_hotkey);
+                }
+            }
+
+            // Register Prompt Enhancer global shortcut
+            let prompt_settings = read_settings(app.handle());
+            if let Ok(mut paused) = app.state::<RuntimeState>().paused.lock() {
+                *paused = prompt_settings.paused;
+            }
+            let _ = register_global_shortcut(app.handle());
+
+            // ── Consolidated System Tray ──
+            {
+                let title_i = MenuItem::with_id(app, "title", "MeshUtility Suite v2.4.0", false, None::<&str>)?;
+                let open_voice = MenuItem::with_id(app, "open_voice", "Open Dictation Suite", true, None::<&str>)?;
+                let open_prompt = MenuItem::with_id(app, "open_prompt", "Open Prompt Enhancer", true, None::<&str>)?;
+                let open_overlay = MenuItem::with_id(app, "open_overlay", "Open Prompt Overlay", true, None::<&str>)?;
+                let settings = MenuItem::with_id(app, "settings", "Settings...", true, None::<&str>)?;
+                let quit = MenuItem::with_id(app, "quit", "Quit Suite", true, Some("Ctrl+Q"))?;
+                let separator_1 = PredefinedMenuItem::separator(app)?;
+                let separator_2 = PredefinedMenuItem::separator(app)?;
+                let menu = Menu::with_items(app, &[
+                    &title_i,
+                    &separator_1,
+                    &open_voice,
+                    &open_prompt,
+                    &open_overlay,
+                    &settings,
+                    &separator_2,
+                    &quit
+                ])?;
+                TrayIconBuilder::new()
+                    .menu(&menu)
+                    .icon(app.default_window_icon().unwrap().clone())
+                    .tooltip("MeshUtility Suite - running in tray")
+                    .show_menu_on_left_click(false)
+                    .on_tray_icon_event(|tray, event| {
+                        if let tauri::tray::TrayIconEvent::Click {
+                            button: tauri::tray::MouseButton::Left,
+                            button_state: tauri::tray::MouseButtonState::Up, ..
+                        } = event {
+                            let app = tray.app_handle();
+                            let _ = open_main_window(app);
+                        }
+                    })
+                    .on_menu_event(|app, ev| match ev.id.as_ref() {
+                        "open_voice" => {
+                            let _ = open_main_window(app);
+                            let _ = app.emit("navigate-view", "dashboard");
+                        }
+                        "open_prompt" => {
+                            let _ = open_main_window(app);
+                            let _ = app.emit("navigate-view", "prompt");
+                        }
+                        "open_overlay" => {
+                            let _ = show_overlay_window(app);
+                        }
+                        "settings" => {
+                            let _ = open_main_window(app);
+                            let _ = app.emit("navigate-view", "settings");
+                        }
+                        "quit" => app.exit(0),
+                        _ => {}
+                    })
+                    .build(app)?;
+            }
+
+            show_startup_windows(app.handle(), autostart);
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.label() == "main" {
+                    let settings = read_settings(window.app_handle());
+                    if settings.close_to_tray {
+                        let _ = window.hide();
+                        api.prevent_close();
+                    }
+                }
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            // Voice Dictation Commands
+            audio::start_recording,
+            audio::stop_recording_and_transcribe,
+            audio::get_audio_devices,
+            audio::check_microphone_status,
+            audio::open_mic_settings,
+            db::get_history,
+            db::get_history_audio,
+            db::get_stats,
+            db::get_setting,
+            db::set_setting,
+            db::get_dictionary,
+            db::add_dictionary_entry,
+            db::delete_dictionary_entry,
+            db::delete_history_entry,
+            db::delete_all_history,
+            transcription::get_available_models,
+            transcription::download_model,
+            load_model,
+            get_downloaded_models,
+            reregister_hotkey,
+            set_recording_mode,
+            show_main_window,
+            get_language_mode,
+            set_language_mode,
+            
+            // Prompt Enhancer Commands
+            get_app_state,
+            save_settings,
+            save_provider_key,
+            get_provider_key,
+            delete_provider_key,
+            add_history,
+            clear_history,
+            capture_selected_text,
+            get_captured_text,
+            copy_text,
+            replace_selected_text,
+            show_overlay,
+            hide_overlay,
+            resize_overlay,
+            set_paused,
+            proxy_request,
+            check_for_updates,
+            install_update
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

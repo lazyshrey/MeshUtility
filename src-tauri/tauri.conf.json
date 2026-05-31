@@ -1,0 +1,93 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MeshUtility",
+  "version": "2.4.0",
+  "identifier": "com.meshpilot.meshutility",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "MeshUtility Suite",
+        "url": "/",
+        "width": 1160,
+        "height": 780,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "decorations": false,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "visible": false,
+        "hiddenTitle": true,
+        "resizable": true
+      },
+      {
+        "label": "widget",
+        "title": "",
+        "url": "/widget.html",
+        "width": 192,
+        "height": 56,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "resizable": true,
+        "shadow": false,
+        "acceptFirstMouse": true,
+        "x": 20,
+        "y": 20
+      },
+      {
+        "label": "overlay",
+        "title": "MeshPrompt Overlay",
+        "url": "/overlay.html",
+        "width": 500,
+        "height": 230,
+        "resizable": false,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "transparent": true,
+        "shadow": false,
+        "skipTaskbar": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [
+      "bin/whisper/*",
+      "bin/sherpa/*"
+    ],
+    "publisher": "MeshPilot",
+    "copyright": "Copyright © 2026 MeshPilot"
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["meshvoice", "meshprompt"]
+      }
+    },
+    "shell": {
+      "open": true
+    }
+  }
+}

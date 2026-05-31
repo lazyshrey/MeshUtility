@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:           #141414;
+  --bg-2:         #101010;
+  --surface:      #1C1C1C;
+  --surface-2:    #222222;
+  --border:       #2C2C2C;
+  --text:         #E8E3DA;
+  --text-muted:   #8E8A83;
+  --primary:      #D1CFC0;
+  --primary-fg:   #363636;
+  --accent:       #F26A4B;
+  --accent-rgb:   242, 106, 75;
+  --accent-hover: #E05A38;
+  --accent-2:     #EF4444;
+  --idle:         #8E8A83;
+  --listening:    var(--accent);
+  --processing:   #D1CFC0;
+  --success:      #4ADE80;
+  --sidebar-bg:   #101010;
+  --sidebar-text: #E8E3DA;
+  --widget-bg:    rgba(16, 16, 16, 0.94);
+  --widget-border:rgba(44, 44, 44, 0.9);
+
+  /* Font rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Scrollbar — 4px, no track */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2C2C2C; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #3C3C3C; }
+
+/* Remove default focus ring — we add our own */
+button:focus-visible { outline: 1px solid var(--border); }
+
+/* Premium Brand Orange Selection highlight */
+::selection {
+  background: rgba(242, 106, 75, 0.28) !important;
+  color: #ffffff !important;
+}
+
