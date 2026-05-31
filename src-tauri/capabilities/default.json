@@ -20,8 +20,6 @@
     "core:window:allow-show",
     "core:window:allow-hide",
     "core:window:allow-set-focus",
-    "shell:allow-open",
-    "stronghold:default",
-    "stronghold:allow-remove-store-record"
+    "shell:allow-open"
   ]
 }
