@@ -364,7 +364,7 @@ export default function WidgetApp() {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body, #root { background: transparent !important; width: 100%; height: 100%; overflow: hidden; }
         @keyframes ripple  { 0% { transform:scale(1); opacity:1; } 100% { transform:scale(1.6); opacity:0; } }
@@ -388,7 +388,7 @@ function IdleContent({ widgetStyle }: { widgetStyle?: string }) {
         fontSize:12, 
         fontWeight:500, 
         letterSpacing:'0.02em', 
-        fontFamily:"'DM Sans',sans-serif",
+        fontFamily:"'Noto Sans',sans-serif",
         textShadow: isInvisible ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
       }}>MeshUtility</span>
     </>
@@ -404,7 +404,7 @@ function ListeningContent({ color, widgetStyle }: { color:string; widgetStyle?: 
         color, 
         fontSize:12, 
         fontWeight:500, 
-        fontFamily:"'DM Sans',sans-serif", 
+        fontFamily:"'Noto Sans',sans-serif", 
         flexShrink:0,
         textShadow: isInvisible ? '0 1px 2px rgba(0,0,0,0.4)' : 'none'
       }}>Listening</span>
@@ -412,7 +412,8 @@ function ListeningContent({ color, widgetStyle }: { color:string; widgetStyle?: 
   )
 }
 
-function SpinnerContent({ color, label, widgetStyle }: { color:string; label:string; widgetStyle?: string }) {
+// label type is any to prevent typescript error if partialTranscription is null
+function SpinnerContent({ color, label, widgetStyle }: { color:string; label:any; widgetStyle?: string }) {
   const isInvisible = widgetStyle === 'invisible'
   return (
     <>
@@ -424,7 +425,7 @@ function SpinnerContent({ color, label, widgetStyle }: { color:string; label:str
         color, 
         fontSize:12, 
         fontWeight:500, 
-        fontFamily:"'DM Sans',sans-serif", 
+        fontFamily:"'Noto Sans',sans-serif", 
         minWidth:0, 
         overflow:'hidden', 
         textOverflow:'ellipsis', 
@@ -446,7 +447,7 @@ function CheckContent({ color, label, widgetStyle }: { color:string; label:strin
         color, 
         fontSize:12, 
         fontWeight:500, 
-        fontFamily:"'DM Sans',sans-serif",
+        fontFamily:"'Noto Sans',sans-serif",
         textShadow: isInvisible ? '0 1px 2px rgba(0,0,0,0.4)' : 'none'
       }}>{label}</span>
     </>
@@ -466,7 +467,7 @@ function ErrorContent({ color, label, isMic, onFix, widgetStyle }: { color:strin
         color, 
         fontSize:11, 
         fontWeight:500, 
-        fontFamily:"'DM Sans',sans-serif", 
+        fontFamily:"'Noto Sans',sans-serif", 
         flexShrink:1, 
         minWidth:0, 
         overflow:'hidden', 
@@ -481,7 +482,7 @@ function ErrorContent({ color, label, isMic, onFix, widgetStyle }: { color:strin
           onClick={(e) => { e.stopPropagation(); onFix(); }}
           style={{
             background:'#EF4444', color:'#fff', fontSize:9, fontWeight:600,
-            fontFamily:"'DM Sans',sans-serif", padding:'2px 6px', borderRadius:99,
+            fontFamily:"'Noto Sans',sans-serif", padding:'2px 6px', borderRadius:99,
             flexShrink:0, letterSpacing:'0.04em'
           }}
         >
@@ -506,7 +507,7 @@ function MicPromptContent({ detail, onGrant, widgetStyle }: { detail:string; onG
         color:'#F26A4B', 
         fontSize:11, 
         fontWeight:500, 
-        fontFamily:"'DM Sans',sans-serif", 
+        fontFamily:"'Noto Sans',sans-serif", 
         flexShrink:1, 
         minWidth:0, 
         overflow:'hidden', 
@@ -520,7 +521,7 @@ function MicPromptContent({ detail, onGrant, widgetStyle }: { detail:string; onG
         onClick={(e) => { e.stopPropagation(); onGrant(); }}
         style={{
           background:'#F26A4B', color:'#fff', fontSize:9, fontWeight:700,
-          fontFamily:"'DM Sans',sans-serif", padding:'2px 6px', borderRadius:99, flexShrink:0
+          fontFamily:"'Noto Sans',sans-serif", padding:'2px 6px', borderRadius:99, flexShrink:0
         }}
       >
         Open

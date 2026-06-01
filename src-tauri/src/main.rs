@@ -693,6 +693,7 @@ fn load_model(
         return Ok(());
     }
 
+
     if !filename.ends_with(".bin") {
         return Err("This model is not selectable by the local engine.".into());
     }
@@ -723,6 +724,7 @@ fn get_downloaded_models() -> Vec<String> {
     if transcription::parakeet_bundle_ready() && !models.iter().any(|m| m == "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8") {
         models.push("sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8".into());
     }
+
     models
 }
 

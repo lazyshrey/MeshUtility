@@ -219,7 +219,7 @@ export default function App() {
       style={{
         display: 'flex', flexDirection: 'column', height: '100vh',
         background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden',
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Noto Sans', sans-serif",
         border: '1px solid var(--border)',
         borderRadius: '8px',
       }}
@@ -311,7 +311,7 @@ export default function App() {
                           background: active ? 'var(--surface)' : 'transparent',
                           border: active ? '1px solid var(--border)' : '1px solid transparent',
                           color: active ? 'var(--text)' : 'var(--text-muted)',
-                          fontFamily: "'DM Sans', sans-serif",
+                          fontFamily: "'Noto Sans', sans-serif",
                         }}
                         onMouseEnter={(e) => {
                           if (!active) {

@@ -91,7 +91,7 @@ export function ResultPopup({
         opacity: visible ? 1 : 0,
         transition: 'transform 240ms cubic-bezier(0.34,1.2,0.64,1), opacity 200ms ease',
         zIndex: 9999,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Noto Sans', sans-serif",
         pointerEvents: 'auto',
       }}
     >
@@ -151,7 +151,7 @@ export function ResultPopup({
               fontSize: 11, cursor: 'pointer',
               padding: '3px 8px',
               transition: 'all 150ms',
-              fontFamily: "'DM Sans', sans-serif",
+              fontFamily: "'Noto Sans', sans-serif",
             }}
           >
             {copied ? '✓ Copied' : 'Copy'}

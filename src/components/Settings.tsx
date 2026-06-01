@@ -107,7 +107,7 @@ function ModelCard({ model, selected, downloaded, dlProgress, downloading, onDow
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
             <span style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{model.name}</span>
             {model.recommended && <span style={{ fontSize:10, background:'rgba(242,106,75,0.15)', color:'#F26A4B', padding:'1px 7px', borderRadius:4 }}>Recommended</span>}
-            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex' || model.id === 'zero-stt-hinglish') && (
+            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex') && (
               <span style={{ fontSize:10, background:'rgba(242,106,75,0.12)', color:'#F26A4B', padding:'1px 7px', borderRadius:4 }}>Hinglish</span>
             )}
             {loading && selected && <span style={{ fontSize:10, color:'var(--text-muted)' }}>Loading…</span>}
@@ -117,13 +117,18 @@ function ModelCard({ model, selected, downloaded, dlProgress, downloading, onDow
             <span style={{ fontSize:10, color:'var(--text-muted)', background:'var(--surface-2)', padding:'2px 7px', borderRadius:4 }}>{model.language}</span>
             <span style={{ fontSize:10, color:'var(--text-muted)', background:'var(--surface-2)', padding:'2px 7px', borderRadius:4 }}>{model.runtime}</span>
             {model.can_translate && <span style={{ fontSize:10, color:'var(--text-muted)', background:'var(--surface-2)', padding:'2px 7px', borderRadius:4 }}>Translate to EN</span>}
-            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex' || model.id === 'zero-stt-hinglish') && (
+            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex') && (
               <span style={{ fontSize:10, color:'#F26A4B', background:'rgba(242,106,75,0.08)', padding:'2px 7px', borderRadius:4 }}>Streaming</span>
             )}
-            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex' || model.id === 'zero-stt-hinglish') && (
+            {(model.id === 'hinglish-turbo' || model.id === 'hinglish-small' || model.id === 'hinglish-apex') && (
               <span style={{ fontSize:10, color:'var(--text-muted)', background:'var(--surface-2)', padding:'2px 7px', borderRadius:4 }}>Local · Offline</span>
             )}
           </div>
+          {dlProgress?.error && (
+            <div style={{ fontSize:11, color:'#EF4444', marginTop:6 }}>
+              Failed: {dlProgress.error}
+            </div>
+          )}
         </div>
         <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:5, flexShrink:0 }}>
           <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
@@ -239,7 +244,7 @@ export function Settings() {
       invoke('set_setting', { key:'model', value: filename }),
       invoke('set_setting', { key:'model_id', value: modelId ?? '' }),
     ])
-    if (modelId === 'hinglish-turbo' || modelId === 'hinglish-small' || modelId === 'hinglish-apex' || modelId === 'zero-stt-hinglish') {
+    if (modelId === 'hinglish-turbo' || modelId === 'hinglish-small' || modelId === 'hinglish-apex') {
       setLanguageMode('hinglish')
       invoke('set_language_mode', { mode: 'hinglish' }).catch(console.error)
     }
@@ -265,7 +270,7 @@ export function Settings() {
 
     if (languageMode === 'en') return isEnOnly || isMulti
     if (languageMode === 'hi') return isMulti || isHinglish
-    if (languageMode === 'hinglish') return isHinglish || m.id === 'turbo' || m.id === 'small'
+    if (languageMode === 'hinglish') return isHinglish || m.id === 'turbo' || m.id === 'small' || m.id === 'base' || m.id === 'tiny'
     if (languageMode === 'auto') return isMulti
     return true
   })
@@ -285,7 +290,7 @@ export function Settings() {
             <button key={opt.value} onClick={() => {
               setMode(opt.value)
               invoke('set_recording_mode', { mode: opt.value }).catch(console.error)
-            }} style={{ flex:1, padding:'14px 16px', borderRadius:10, textAlign:'left', cursor:'pointer', transition:'all 0.15s', background: mode===opt.value ? 'rgba(var(--accent-rgb), 0.12)' : 'var(--surface)', border:`1.5px solid ${mode===opt.value ? 'var(--accent)' : 'var(--border)'}`, boxShadow: mode===opt.value ? '0 0 12px rgba(var(--accent-rgb), 0.15)' : 'none', fontFamily:"'DM Sans',sans-serif" }}>
+            }} style={{ flex:1, padding:'14px 16px', borderRadius:10, textAlign:'left', cursor:'pointer', transition:'all 0.15s', background: mode===opt.value ? 'rgba(var(--accent-rgb), 0.12)' : 'var(--surface)', border:`1.5px solid ${mode===opt.value ? 'var(--accent)' : 'var(--border)'}`, boxShadow: mode===opt.value ? '0 0 12px rgba(var(--accent-rgb), 0.15)' : 'none', fontFamily:"'Noto Sans',sans-serif" }}>
               <div style={{ fontSize:13, fontWeight:600, color: mode===opt.value ? 'var(--accent)' : 'var(--text)', marginBottom:3, transition:'color 0.15s' }}>{opt.label}</div>
               <div style={{ fontSize:12, color:'var(--text-muted)' }}>{opt.desc}</div>
             </button>
@@ -321,7 +326,7 @@ export function Settings() {
               setWidgetStyle(opt.value)
               await invoke('set_setting', { key: 'widget_style', value: opt.value })
               await emit('widget-style-changed', opt.value).catch(console.error)
-            }} style={{ flex:1, padding:'14px 16px', borderRadius:10, textAlign:'left', cursor:'pointer', transition:'all 0.15s', background: widgetStyle===opt.value ? 'rgba(var(--accent-rgb), 0.12)' : 'var(--surface)', border:`1.5px solid ${widgetStyle===opt.value ? 'var(--accent)' : 'var(--border)'}`, boxShadow: widgetStyle===opt.value ? '0 0 12px rgba(var(--accent-rgb), 0.15)' : 'none', fontFamily:"'DM Sans',sans-serif" }}>
+            }} style={{ flex:1, padding:'14px 16px', borderRadius:10, textAlign:'left', cursor:'pointer', transition:'all 0.15s', background: widgetStyle===opt.value ? 'rgba(var(--accent-rgb), 0.12)' : 'var(--surface)', border:`1.5px solid ${widgetStyle===opt.value ? 'var(--accent)' : 'var(--border)'}`, boxShadow: widgetStyle===opt.value ? '0 0 12px rgba(var(--accent-rgb), 0.15)' : 'none', fontFamily:"'Noto Sans',sans-serif" }}>
               <div style={{ fontSize:13, fontWeight:600, color: widgetStyle===opt.value ? 'var(--accent)' : 'var(--text)', marginBottom:3, transition:'color 0.15s' }}>{opt.label}</div>
               <div style={{ fontSize:12, color:'var(--text-muted)' }}>{opt.desc}</div>
             </button>
@@ -347,7 +352,7 @@ export function Settings() {
               cursor:'pointer', transition:'all 0.15s',
               background: languageMode===opt.value ? 'rgba(242,106,75,0.08)' : 'var(--surface)',
               border:`1px solid ${languageMode===opt.value ? '#F26A4B' : 'var(--border)'}`,
-              fontFamily:"'DM Sans',sans-serif",
+              fontFamily:"'Noto Sans',sans-serif",
             }}>
               <div style={{ fontSize:12, fontWeight:600, color: languageMode===opt.value ? '#F26A4B' : 'var(--text)', marginBottom:2 }}>
                 {opt.label}
@@ -403,7 +408,7 @@ export function Settings() {
           invoke('set_setting', { key:'microphone', value: e.target.value })
             .then(refreshMicStatus)
             .catch(console.error)
-        }} style={{ width:'100%', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 16px', color:'var(--text)', fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none', cursor:'pointer' }}>
+        }} style={{ width:'100%', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 16px', color:'var(--text)', fontSize:13, fontFamily:"'Noto Sans',sans-serif", outline:'none', cursor:'pointer' }}>
           <option value="">System Default</option>
           {mics.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
@@ -441,7 +446,7 @@ export function Settings() {
         <p style={{ fontSize:12, color:'var(--text-muted)', margin:0 }}>Used automatically for translation and summarization.</p>
       </section>
 
-      <button onClick={save} style={{ width:'100%', padding:'13px 0', borderRadius:10, fontSize:13, fontWeight:500, cursor:'pointer', transition:'all 0.15s', border:'none', fontFamily:"'DM Sans',sans-serif", background: saved ? 'rgba(74,222,128,0.12)' : 'var(--primary)', color: saved ? '#4ADE80' : 'var(--primary-fg)' }}>
+      <button onClick={save} style={{ width:'100%', padding:'13px 0', borderRadius:10, fontSize:13, fontWeight:500, cursor:'pointer', transition:'all 0.15s', border:'none', fontFamily:"'Noto Sans',sans-serif", background: saved ? 'rgba(74,222,128,0.12)' : 'var(--primary)', color: saved ? '#4ADE80' : 'var(--primary-fg)' }}>
         {saved ? 'Saved' : 'Save settings'}
       </button>
     </div>

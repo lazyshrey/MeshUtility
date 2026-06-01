@@ -199,7 +199,7 @@ export function Dashboard() {
                 background: engine === e ? 'var(--surface-2)' : 'transparent',
                 border: engine === e ? '1px solid var(--border)' : '1px solid transparent',
                 color: engine === e ? 'var(--text)' : 'var(--text-muted)',
-                fontFamily: "'DM Sans', sans-serif",
+                fontFamily: "'Noto Sans', sans-serif",
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
               {e === 'local'
@@ -221,7 +221,7 @@ export function Dashboard() {
         ].map(({ label, value }) => (
           <div key={label} style={{ background: 'var(--surface)', borderRadius: 10, padding: 12, border: '1px solid var(--border)' }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-            <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" }}>{value}</div>
+            <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--text)', fontFamily: "'Noto Sans', sans-serif" }}>{value}</div>
           </div>
         ))}
       </div>
@@ -241,7 +241,7 @@ export function Dashboard() {
             History <span style={{ color: 'var(--border)', fontWeight: 400 }}>({history.length}/10)</span>
           </span>
           {history.length > 0 && (
-            <button onClick={deleteAll} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", transition: 'all 0.15s' }}
+            <button onClick={deleteAll} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontFamily: "'Noto Sans',sans-serif", transition: 'all 0.15s' }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(239,68,68,0.4)' }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)' }}>
               Delete all

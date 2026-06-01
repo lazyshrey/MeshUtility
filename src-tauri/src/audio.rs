@@ -28,7 +28,6 @@ static CAPTURE_CONTROL: std::sync::LazyLock<Mutex<Option<std::sync::mpsc::SyncSe
     std::sync::LazyLock::new(|| Mutex::new(None));
 static CAPTURE_ACTIVE: AtomicBool = AtomicBool::new(false);
 static LAST_RMS: Mutex<f32> = Mutex::new(0.0);
-static STREAMING_CANCEL: AtomicBool = AtomicBool::new(false);
 
 const MAX_CAPTURE_SECONDS: usize = 600;
 const PREROLL_MS: usize = 240;
@@ -358,46 +357,6 @@ pub async fn start_recording(
     CAPTURE_ACTIVE.store(true, Ordering::SeqCst);
     *state.is_recording.lock().unwrap() = true;
 
-    // Spawn streaming partials if a whisper.cpp model is active
-    {
-        use tauri::Manager;
-        let model_for_streaming = state.selected_model.lock().unwrap().clone();
-        let mut bundled_bin: Option<std::path::PathBuf> = None;
-        if let Ok(res_dir) = _app.path().resource_dir() {
-            let bin_name = if cfg!(target_os = "windows") { "whisper-cli.exe" } else { "whisper-cli" };
-            let p = res_dir.join("bin").join("whisper").join(bin_name);
-            if p.exists() { bundled_bin = Some(p); }
-        }
-        if bundled_bin.is_none() {
-            if let Ok(exe) = std::env::current_exe() {
-                if let Some(dir) = exe.parent() {
-                    let bin_name = if cfg!(target_os = "windows") { "whisper-cli.exe" } else { "whisper-cli" };
-                    let p = dir.join("..").join("..").join("bin").join("whisper").join(bin_name);
-                    if p.exists() { bundled_bin = Some(p); }
-                }
-            }
-        }
-        if let (Some(bin), Some(model)) = (bundled_bin, model_for_streaming) {
-            let model_path = std::path::PathBuf::from(&model);
-            if model_path.is_file() && model.ends_with(".bin") {
-                let lang = {
-                    let conn = crate::db::DB_CONN.lock().unwrap();
-                    conn.query_row("SELECT value FROM settings WHERE key='language_mode'", [], |r| r.get::<_,String>(0))
-                        .unwrap_or_else(|_| "auto".into())
-                };
-                let mut lang_flag = match lang.as_str() {
-                    "en" => "en".to_string(),
-                    "hi" | "hinglish" => "hi".to_string(),
-                    _ => "auto".to_string(),
-                };
-                if model.contains("hindi2hinglish") || model.contains("zero-stt-hinglish") {
-                    lang_flag = "hi".to_string(); // Force Hindi to bypass slow auto-detection for fine-tuned models
-                }
-                spawn_streaming_partials(_app.clone(), bin.to_string_lossy().to_string(), model, lang_flag);
-            }
-        }
-    }
-
     Ok(session_id)
 }
 
@@ -409,7 +368,6 @@ pub async fn stop_recording_and_transcribe(
     access_token: Option<String>,
     session_id: Option<u64>,
 ) -> Result<String, String> {
-    STREAMING_CANCEL.store(true, Ordering::SeqCst);
     if let Some(stop_session_id) = session_id {
         let current_session_id = *state.recording_session_id.lock().unwrap();
         if stop_session_id != current_session_id {
@@ -556,16 +514,18 @@ async fn transcribe(
 
     let model_path = state.selected_model.lock().unwrap().clone();
     if let Some(model) = model_path {
-        if model.contains("hindi2hinglish") || model.contains("zero-stt-hinglish") {
+        if model.contains("hindi2hinglish") {
             lang_flag = "hi".to_string(); // Force Hindi to bypass slow auto-detection for fine-tuned models
         }
         let model_path = std::path::PathBuf::from(&model);
-        if model_path.is_dir()
-            && model_path.file_name().and_then(|n| n.to_str()) == Some("sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8")
-        {
-            return transcribe_parakeet(&model_path, wav_path, app_handle).await
-                .map(|text| (text, "parakeet".into()));
+        if model_path.is_dir() {
+            if model_path.file_name().and_then(|n| n.to_str()) == Some("sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8") {
+                return transcribe_parakeet(&model_path, wav_path, app_handle).await
+                    .map(|text| (text, "parakeet".into()));
+            }
+            return Err("The selected model is outdated or invalid (e.g. Moonshine). Please open Settings and select a valid Whisper model.".into());
         }
+
 
         use tauri::Manager;
         
@@ -606,8 +566,36 @@ async fn transcribe(
 }
 
 pub(crate) async fn transcribe_subprocess(bin: &str, model: &str, wav: &std::path::Path, language: &str) -> Result<String, String> {
+    let log_path = dirs::data_local_dir()
+        .map(|p| p.join("MeshVoice").join("whisper_diag.log"));
+
+    if let Some(ref lp) = log_path {
+        let _ = std::fs::create_dir_all(lp.parent().unwrap());
+        let log_content = format!(
+            "[{:?}] RUNNING WHISPER-CLI\n  bin: {}\n  model: {}\n  wav: {:?}\n  lang: {}\n  current_dir: {:?}\n\n",
+            chrono::Utc::now(), bin, model, wav, language, std::path::Path::new(bin).parent()
+        );
+        let _ = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(lp)
+            .and_then(|mut f| {
+                use std::io::Write;
+                let _ = f.write_all(log_content.as_bytes());
+                Ok(())
+            });
+    }
+
     let mut command = tokio::process::Command::new(bin);
     command.kill_on_drop(true);
+
+    // Set working directory to the binary's directory so dependent DLLs (ggml.dll, whisper.dll, SDL2.dll) are found on Windows
+    let bin_path = std::path::Path::new(bin);
+    if let Some(dir) = bin_path.parent() {
+        if !dir.as_os_str().is_empty() {
+            command.current_dir(dir);
+        }
+    }
     command
         .args(&[
             "-m", model,
@@ -626,19 +614,44 @@ pub(crate) async fn transcribe_subprocess(bin: &str, model: &str, wav: &std::pat
         command.args(&["-l", language]);
     }
     // The fine-tuned Hinglish models hallucinate if given a prompt. Only prompt standard models.
-    if language == "hi" && !model.contains("hindi2hinglish") && !model.contains("zero-stt-hinglish") {
+    if language == "hi" && !model.contains("hindi2hinglish") {
         command.args(&["--prompt", "Haan bhai, this is a Hinglish sentence, theek hai?"]);
     }
 
     #[cfg(target_os = "windows")]
     {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        command.creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS);
+        command.creation_flags(CREATE_NO_WINDOW);
     }
 
-    let output = command.output().await
-        .map_err(|e| format!("whisper-cli error: {}", e))?;
+    let output_res = command.output().await;
+
+    if let Some(ref lp) = log_path {
+        let log_content = match &output_res {
+            Ok(output) => {
+                format!(
+                    "[{:?}] COMPLETED\n  status: {}\n  stdout: {}\n  stderr: {}\n\n",
+                    chrono::Utc::now(),
+                    output.status,
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                )
+            }
+            Err(e) => {
+                format!("[{:?}] SPAWN ERROR: {}\n\n", chrono::Utc::now(), e)
+            }
+        };
+        let _ = std::fs::OpenOptions::new()
+            .append(true)
+            .open(lp)
+            .and_then(|mut f| {
+                use std::io::Write;
+                let _ = f.write_all(log_content.as_bytes());
+                Ok(())
+            });
+    }
+
+    let output = output_res.map_err(|e| format!("whisper-cli error: {}", e))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
@@ -655,6 +668,7 @@ pub(crate) async fn transcribe_subprocess(bin: &str, model: &str, wav: &std::pat
         .collect::<Vec<_>>().join(" ");
     Ok(clean.trim().to_string())
 }
+
 
 async fn transcribe_parakeet(model_dir: &std::path::Path, wav: &std::path::Path, app_handle: &tauri::AppHandle) -> Result<String, String> {
     let encoder = model_dir.join("encoder.int8.onnx");
@@ -704,8 +718,7 @@ async fn transcribe_parakeet(model_dir: &std::path::Path, wav: &std::path::Path,
     #[cfg(target_os = "windows")]
     {
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        command.creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS);
+        command.creation_flags(CREATE_NO_WINDOW);
     }
 
     let output = command.output().await
@@ -732,6 +745,8 @@ async fn transcribe_parakeet(model_dir: &std::path::Path, wav: &std::path::Path,
 
     Ok(cleaned)
 }
+
+
 
 fn parse_parakeet_output(stdout: &str) -> String {
     let mut parts = Vec::new();
@@ -1002,91 +1017,8 @@ pub fn start_level_emitter(app: tauri::AppHandle, is_recording: Arc<Mutex<bool>>
     });
 }
 
-/// Spawn a background task that emits transcription-partial events every ~2.5s of new audio.
-/// Only used with whisper.cpp models (not parakeet).
-pub(crate) fn spawn_streaming_partials(
-    app: tauri::AppHandle,
-    bin_path: String,
-    model_path: String,
-    language: String,
-) {
-    STREAMING_CANCEL.store(false, Ordering::SeqCst);
-    tokio::spawn(async move {
-        streaming_partials_loop(app, bin_path, model_path, language).await;
-    });
-}
 
-async fn streaming_partials_loop(
-    app: tauri::AppHandle,
-    bin_path: String,
-    model_path: String,
-    language: String,
-) {
-    // Wait for initial audio to accumulate
-    tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
 
-    let mut last_emit_len = 0usize;
-
-    loop {
-        tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-
-        if STREAMING_CANCEL.load(Ordering::Relaxed) { return; }
-        if !CAPTURE_ACTIVE.load(Ordering::Relaxed) { return; }
-
-        let (buf_snapshot, device_rate) = {
-            let buf = AUDIO_BUFFER.lock().unwrap();
-            (buf.clone(), *DEVICE_SAMPLE_RATE.lock().unwrap())
-        };
-
-        // Trigger once 2s of NEW audio has accumulated since last partial
-        let samples_per_trigger = (device_rate as usize * 2).max(device_rate as usize);
-        if buf_snapshot.len() < last_emit_len + samples_per_trigger {
-            continue;
-        }
-        last_emit_len = buf_snapshot.len();
-
-        // Take last 2.5s window
-        let window_samples = (device_rate as usize * 5 / 2).min(buf_snapshot.len());
-        let window = buf_snapshot[buf_snapshot.len() - window_samples..].to_vec();
-        drop(buf_snapshot);
-
-        // Resample to 16kHz
-        let samples = resample_to_16k(&window, device_rate);
-        if samples.len() < 3200 { continue; } // need > 200ms of audio
-
-        // Write temp WAV
-        let tmp = recordings_dir().join("__partial_tmp__.wav");
-        if save_wav(&tmp, &samples, 16000).is_err() { continue; }
-
-        if STREAMING_CANCEL.load(Ordering::Relaxed) { return; }
-
-        // Transcribe
-        let transcribe_fut = transcribe_subprocess(&bin_path, &model_path, &tmp, &language);
-        let result = tokio::select! {
-            res = transcribe_fut => res,
-            _ = async {
-                loop {
-                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-                    if STREAMING_CANCEL.load(Ordering::Relaxed) { break; }
-                }
-            } => { return; }
-        };
-
-        match result {
-            Ok(text) => {
-                let trimmed = text.trim().to_string();
-                let is_hallucination = matches!(
-                    trimmed.to_lowercase().as_str(),
-                    "you" | "you." | "thank you" | "thank you." | "thanks" | "thanks." | "bye" | "bye."
-                );
-                if !trimmed.is_empty() && !is_hallucination {
-                    let _ = app.emit("transcription-partial", &trimmed);
-                }
-            }
-            Err(_) => {} // Silently ignore partial failures
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

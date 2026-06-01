@@ -281,7 +281,7 @@ function IdleContent() {
       }} />
       <span style={{
         color: '#8E8A83', fontSize: 12, fontWeight: 500,
-        letterSpacing: '0.02em', fontFamily: "'DM Sans', sans-serif",
+        letterSpacing: '0.02em', fontFamily: "'Noto Sans', sans-serif",
       }}>
         MeshVoice
       </span>
@@ -307,7 +307,7 @@ function ListeningContent({ levels, seconds, color, partial }: { levels: number[
         <Waveform levels={levels} color={color} height={28} />
         <span style={{
           color, fontSize: 11, fontWeight: 500,
-          fontFamily: "'DM Sans', sans-serif", flexShrink: 0,
+          fontFamily: "'Noto Sans', sans-serif", flexShrink: 0,
         }}>
           Listening
         </span>
@@ -322,7 +322,7 @@ function ListeningContent({ levels, seconds, color, partial }: { levels: number[
         <div style={{
           fontSize: 10,
           color: 'rgba(242,106,75,0.7)',
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "'Noto Sans', sans-serif",
           maxWidth: 280,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -351,7 +351,7 @@ function ProcessingContent({ color }: { color: string }) {
       </svg>
       <span style={{
         color, fontSize: 11, fontWeight: 500,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Noto Sans', sans-serif",
       }}>
         Transcribing
       </span>
@@ -365,7 +365,7 @@ function DoneContent({ color }: { color: string }) {
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
         <path d="M2.5 7L5.5 10L11.5 4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span style={{ color, fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}>
+      <span style={{ color, fontSize: 11, fontWeight: 500, fontFamily: "'Noto Sans', sans-serif" }}>
         Injected
       </span>
     </>
@@ -379,7 +379,7 @@ function ErrorContent({ color }: { color: string }) {
         <circle cx="7" cy="7" r="5.5" stroke={color} strokeWidth="1.2" />
         <path d="M7 4.5V7.5M7 9.5V9.6" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
       </svg>
-      <span style={{ color, fontSize: 11, fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}>
+      <span style={{ color, fontSize: 11, fontWeight: 500, fontFamily: "'Noto Sans', sans-serif" }}>
         No speech detected
       </span>
     </>

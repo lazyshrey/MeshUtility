@@ -28,13 +28,13 @@ pub struct WhisperModel {
 pub fn get_available_models() -> Vec<WhisperModel> {
     let hf = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main";
     vec![
-        WhisperModel { id: "parakeet-v3".into(), name: "Parakeet V3".into(), description: "Recommended Parakeet V3 runtime bundle using sherpa-onnx INT8 for local Windows transcription.".into(), filename: PARAKEET_BUNDLE_ID.into(), size_mb: 730, download_url: "meshvoice://parakeet-v3".into(), language: "25 languages".into(), can_translate: false, accuracy: 96, speed: 92, recommended: true, runtime: "sherpa-onnx".into() },
+        WhisperModel { id: "parakeet-v3".into(), name: "Parakeet V3".into(), description: "Recommended Parakeet V3 runtime bundle using sherpa-onnx INT8 for local Windows transcription.".into(), filename: PARAKEET_BUNDLE_ID.into(), size_mb: 640, download_url: "meshvoice://parakeet-v3".into(), language: "25 languages".into(), can_translate: false, accuracy: 96, speed: 92, recommended: true, runtime: "sherpa-onnx".into() },
         WhisperModel { id: "tiny".into(),   name: "Whisper Tiny".into(),     description: "Ultra-fast, basic accuracy.".into(),               filename: "ggml-tiny.en.bin".into(),        size_mb: 75,   download_url: format!("{}/ggml-tiny.en.bin", hf),        language: "English".into(),        can_translate: false, accuracy: 40, speed: 98, recommended: false, runtime: "whisper.cpp".into() },
         WhisperModel { id: "base".into(),   name: "Whisper Base".into(),     description: "Fast and fairly accurate. Best starting point.".into(), filename: "ggml-base.en.bin".into(),     size_mb: 142,  download_url: format!("{}/ggml-base.en.bin", hf),       language: "English".into(),        can_translate: false, accuracy: 62, speed: 90, recommended: false, runtime: "whisper.cpp".into() },
-        WhisperModel { id: "small".into(),  name: "Whisper Small".into(),    description: "Good balance, multilingual.".into(),                 filename: "ggml-small.bin".into(),          size_mb: 465,  download_url: format!("{}/ggml-small.bin", hf),          language: "Multi-language".into(), can_translate: true,  accuracy: 74, speed: 80, recommended: false, runtime: "whisper.cpp".into() },
-        WhisperModel { id: "medium".into(), name: "Whisper Medium".into(),   description: "High accuracy, medium speed.".into(),                filename: "ggml-medium.bin".into(),         size_mb: 1500, download_url: format!("{}/ggml-medium.bin", hf),         language: "Multi-language".into(), can_translate: true,  accuracy: 83, speed: 55, recommended: false, runtime: "whisper.cpp".into() },
-        WhisperModel { id: "distil-large".into(), name: "Whisper Distil-Large".into(), description: "Great accuracy with faster inference than Large v3.".into(), filename: "ggml-distil-large-v3.bin".into(), size_mb: 1500, download_url: format!("{}/ggml-distil-large-v3.bin", hf), language: "Multi-language".into(), can_translate: true, accuracy: 90, speed: 72, recommended: false, runtime: "whisper.cpp".into() },
-        WhisperModel { id: "turbo".into(),  name: "Whisper Turbo".into(),    description: "Large model distilled for speed.".into(),            filename: "ggml-large-v3-turbo.bin".into(), size_mb: 809,  download_url: format!("{}/ggml-large-v3-turbo.bin", hf), language: "Multi-language".into(), can_translate: true,  accuracy: 88, speed: 70, recommended: false, runtime: "whisper.cpp".into() },
+        WhisperModel { id: "small".into(),  name: "Whisper Small".into(),    description: "Good balance, multilingual.".into(),                 filename: "ggml-small.bin".into(),          size_mb: 466,  download_url: format!("{}/ggml-small.bin", hf),          language: "Multi-language".into(), can_translate: true,  accuracy: 74, speed: 80, recommended: false, runtime: "whisper.cpp".into() },
+
+        WhisperModel { id: "distil-large".into(), name: "Whisper Distil-Large".into(), description: "Great accuracy with faster inference than Large v3.".into(), filename: "ggml-distil-large-v3.bin".into(), size_mb: 1520, download_url: format!("{}/ggml-distil-large-v3.bin", hf), language: "Multi-language".into(), can_translate: true, accuracy: 90, speed: 72, recommended: false, runtime: "whisper.cpp".into() },
+        WhisperModel { id: "turbo".into(),  name: "Whisper Turbo".into(),    description: "Large model distilled for speed.".into(),            filename: "ggml-large-v3-turbo.bin".into(), size_mb: 1500, download_url: format!("{}/ggml-large-v3-turbo.bin", hf), language: "Multi-language".into(), can_translate: true,  accuracy: 88, speed: 70, recommended: false, runtime: "whisper.cpp".into() },
         WhisperModel {
             id: "hinglish-apex".into(),
             name: "Hindi2Hinglish Apex".into(),
@@ -49,21 +49,8 @@ pub fn get_available_models() -> Vec<WhisperModel> {
             recommended: false,
             runtime: "whisper.cpp".into(),
         },
-        WhisperModel {
-            id: "zero-stt-hinglish".into(),
-            name: "Zero STT Hinglish".into(),
-            description: "ShunyaLabs's zero-stt-hinglish. Dedicated local Hinglish streaming model. Optimized for Hindi-English code switching.".into(),
-            filename: "ggml-zero-stt-hinglish-q5_1.bin".into(),
-            size_mb: 204,
-            download_url: "https://huggingface.co/voquill/whisper-hindi2hinglish-apex-ggml/resolve/main/ggml-hindi2hinglish-apex-q5_1.bin".into(),
-            language: "Hinglish \u{00b7} Hindi+English".into(),
-            can_translate: false,
-            accuracy: 92,
-            speed: 45,
-            recommended: true,
-            runtime: "whisper.cpp".into(),
-        },
-        WhisperModel { id: "large".into(),  name: "Whisper Large v3".into(), description: "Best accuracy available.".into(),                   filename: "ggml-large-v3.bin".into(),       size_mb: 2800, download_url: format!("{}/ggml-large-v3.bin", hf),       language: "Multi-language".into(), can_translate: true,  accuracy: 95, speed: 30, recommended: false, runtime: "whisper.cpp".into() },
+
+
     ]
 }
 
@@ -87,6 +74,7 @@ pub async fn download_model(
     if filename == PARAKEET_BUNDLE_ID {
         return download_parakeet_bundle(app, filename).await;
     }
+
 
     use futures_util::StreamExt;
     use tokio::io::AsyncWriteExt;
@@ -414,3 +402,5 @@ fn truncate_error(body: &str) -> String {
     out.push_str("...");
     out
 }
+
+
