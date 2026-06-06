@@ -1,6 +1,6 @@
 [package]
-name = "meshvoice"
-version = "0.2.3"
+name = "meshutility"
+version = "1.0.5"
 description = "A native dictation app"
 authors = ["MeshPilot"]
 license = "Apache-2.0"

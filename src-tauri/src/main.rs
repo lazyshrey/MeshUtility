@@ -997,7 +997,7 @@ async fn check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> 
         .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
 
     let res = client
-        .get("https://api.github.com/repos/Jenesh11/MeshPilot-Releases/releases")
+        .get("https://api.github.com/repos/MeshPilot-in/MeshUtility/releases")
         .send()
         .await
         .map_err(|e| format!("Network error checking for updates: {e}"))?;

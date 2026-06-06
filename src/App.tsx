@@ -19,6 +19,7 @@ import { DictionaryEditor } from './components/DictionaryEditor'
 import { MainApp as PromptApp } from './components/PromptApp'
 import { AppearanceView } from './components/AppearanceView'
 import { VersionWidget } from './components/VersionWidget'
+import { UpdateWidget } from './components/UpdateWidget'
 import { applyStoredTheme } from './lib/appearance'
 import { useAppStore } from './store/appStore'
 
@@ -276,6 +277,7 @@ export default function App() {
             onMouseDown={handleBarMouseDown}
             onPointerDown={(e) => handleDragPointerDown(e, appWindowRef.current)}
           >
+            <UpdateWidget />
             <VersionWidget />
           </div>
         </aside>

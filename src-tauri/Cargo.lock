@@ -2680,8 +2680,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "meshvoice"
-version = "0.2.3"
+name = "meshutility"
+version = "1.0.5"
 dependencies = [
  "arboard",
  "chrono",
