@@ -47,7 +47,7 @@ flate2 = "1.0"
 [target.'cfg(windows)'.dependencies]
 # GPU acceleration on Windows, matching Handy: DirectML for the Parakeet ONNX
 # graph and Vulkan for whisper.cpp.
-transcribe-rs = { version = "0.3.8", features = ["onnx", "whisper-cpp", "whisper-vulkan", "ort-directml"] }
+transcribe-rs = { version = "0.3.8", features = ["onnx", "whisper-cpp", "ort-directml"] }
 windows = { version = "0.58", features = [
     "Win32_Foundation",
     "Win32_UI_WindowsAndMessaging",

@@ -435,7 +435,7 @@ nav {
 
 .meshprompt-theme textarea {
   min-height: 160px;
-  resize: vertical;
+  resize: none;
   padding: 12px;
   line-height: 1.6;
 }

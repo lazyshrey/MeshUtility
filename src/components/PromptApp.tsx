@@ -305,14 +305,13 @@ export function MainApp({
         <main className="main-panel">
           <section className="content-scroll">
             {view === "text" && (
-              <div className="grid-two compact-grid">
-                <div className="card stack">
+              <div className="stack compact-grid" style={{ gap: '24px' }}>
+                <div className="stack" style={{ gap: '16px' }}>
                   <div className="card-heading">
                     <div>
                       <span className="eyebrow">Active Pipeline</span>
                       <h3>{activeAction.label}</h3>
                     </div>
-                    <button onClick={() => void captureText()} style={{ cursor: 'pointer' }}>Capture Selection</button>
                   </div>
                   
                   <div className="stack" style={{ gap: '8px' }}>
@@ -350,27 +349,33 @@ export function MainApp({
                   </div>
                 </div>
                 
-                <div className="card stack">
-                  <div className="card-heading">
-                    <div>
-                      <span className="eyebrow">Output Stream ({state.settings.provider.provider} / {state.settings.provider.model})</span>
-                      <h3>Enhanced Prompt</h3>
+                {output && (
+                  <>
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+
+                    <div className="stack" style={{ gap: '16px' }}>
+                      <div className="card-heading">
+                        <div>
+                          <span className="eyebrow">Output Stream ({state.settings.provider.provider} / {state.settings.provider.model})</span>
+                          <h3>Enhanced Prompt</h3>
+                        </div>
+                      </div>
+                      
+                      <textarea 
+                        value={output} 
+                        onChange={(event) => setOutput(event.target.value)} 
+                        placeholder="Improved prompt text will appear here." 
+                        style={{ flex: 1 }}
+                      />
+                      
+                      <div className="button-row">
+                        <button className="primary" disabled={!output} onClick={() => void replaceOutput()} style={{ cursor: 'pointer' }}>Replace Selection</button>
+                        <button disabled={!output} onClick={() => void copyOutput()} style={{ cursor: 'pointer' }}><Copy size={14} /> Copy</button>
+                        <button disabled={!selectedText || busy} onClick={() => void runAction()} style={{ cursor: 'pointer' }}><RotateCcw size={14} /> Retry</button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <textarea 
-                    value={output} 
-                    onChange={(event) => setOutput(event.target.value)} 
-                    placeholder="Improved prompt text will appear here." 
-                    style={{ flex: 1 }}
-                  />
-                  
-                  <div className="button-row">
-                    <button className="primary" disabled={!output} onClick={() => void replaceOutput()} style={{ cursor: 'pointer' }}>Replace Selection</button>
-                    <button disabled={!output} onClick={() => void copyOutput()} style={{ cursor: 'pointer' }}><Copy size={14} /> Copy</button>
-                    <button disabled={!selectedText || busy} onClick={() => void runAction()} style={{ cursor: 'pointer' }}><RotateCcw size={14} /> Retry</button>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -443,14 +448,13 @@ export function MainApp({
         <main className="main-panel">
           <section className="content-scroll">
             {view === "text" && (
-              <div className="grid-two compact-grid">
-                <div className="card stack">
+              <div className="stack compact-grid" style={{ gap: '24px' }}>
+                <div className="stack" style={{ gap: '16px' }}>
                   <div className="card-heading">
                     <div>
                       <span className="eyebrow">Active Pipeline</span>
                       <h3>{activeAction.label}</h3>
                     </div>
-                    <button onClick={() => void captureText()} style={{ cursor: 'pointer' }}>Capture Selection</button>
                   </div>
                   
                   <div className="stack" style={{ gap: '8px' }}>
@@ -488,27 +492,33 @@ export function MainApp({
                   </div>
                 </div>
                 
-                <div className="card stack">
-                  <div className="card-heading">
-                    <div>
-                      <span className="eyebrow">Output Stream ({state.settings.provider.provider} / {state.settings.provider.model})</span>
-                      <h3>Enhanced Prompt</h3>
+                {output && (
+                  <>
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '8px 0' }} />
+
+                    <div className="stack" style={{ gap: '16px' }}>
+                      <div className="card-heading">
+                        <div>
+                          <span className="eyebrow">Output Stream ({state.settings.provider.provider} / {state.settings.provider.model})</span>
+                          <h3>Enhanced Prompt</h3>
+                        </div>
+                      </div>
+                      
+                      <textarea 
+                        value={output} 
+                        onChange={(event) => setOutput(event.target.value)} 
+                        placeholder="Improved prompt text will appear here." 
+                        style={{ flex: 1 }}
+                      />
+                      
+                      <div className="button-row">
+                        <button className="primary" disabled={!output} onClick={() => void replaceOutput()} style={{ cursor: 'pointer' }}>Replace Selection</button>
+                        <button disabled={!output} onClick={() => void copyOutput()} style={{ cursor: 'pointer' }}><Copy size={14} /> Copy</button>
+                        <button disabled={!selectedText || busy} onClick={() => void runAction()} style={{ cursor: 'pointer' }}><RotateCcw size={14} /> Retry</button>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <textarea 
-                    value={output} 
-                    onChange={(event) => setOutput(event.target.value)} 
-                    placeholder="Improved prompt text will appear here." 
-                    style={{ flex: 1 }}
-                  />
-                  
-                  <div className="button-row">
-                    <button className="primary" disabled={!output} onClick={() => void replaceOutput()} style={{ cursor: 'pointer' }}>Replace Selection</button>
-                    <button disabled={!output} onClick={() => void copyOutput()} style={{ cursor: 'pointer' }}><Copy size={14} /> Copy</button>
-                    <button disabled={!selectedText || busy} onClick={() => void runAction()} style={{ cursor: 'pointer' }}><RotateCcw size={14} /> Retry</button>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
             )}
 

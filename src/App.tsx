@@ -205,10 +205,6 @@ export default function App() {
           >
             <PanelLeft size={14} strokeWidth={1.8} />
           </button>
-          <div className="utility-status-pill" data-tauri-drag-region>
-            <span className={`utility-live-dot ${engine}`} />
-            {engine === 'cloud' ? 'Cloud' : 'Local'}
-          </div>
         </div>
 
         <span className="utility-title-center" data-tauri-drag-region>
