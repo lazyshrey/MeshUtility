@@ -10,10 +10,10 @@ Built with Tauri 2, React, and Rust. Works fully offline with local Whisper mode
 
 <br/>
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-orange.svg?style=flat-square&labelColor=111&color=F26A4B)](LICENSE)
-[![Tauri](https://img.shields.io/badge/Tauri-2.x-orange?style=flat-square&labelColor=111&color=F26A4B)](https://tauri.app)
-[![Version](https://img.shields.io/badge/Version-v1.0.1-orange?style=flat-square&labelColor=111&color=F26A4B)](https://github.com/Jenesh11/MeshUtility/releases)
-[![Platform](https://img.shields.io/badge/Platform-Windows-orange?style=flat-square&labelColor=111&color=F26A4B)](https://github.com/Jenesh11/MeshUtility/releases)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-34d399?style=flat&logo=apache&logoColor=white&labelColor=1e293b)](LICENSE)
+[![Tauri](https://img.shields.io/badge/Tauri-2.x-2496ED?style=flat&logo=tauri&logoColor=white&labelColor=1e293b)](https://tauri.app)
+[![Version](https://img.shields.io/badge/Version-v1.0.6-a855f7?style=flat&logo=github&logoColor=white&labelColor=1e293b)](https://github.com/lazyshrey/MeshUtility/releases)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=flat&logo=windows&logoColor=white&labelColor=1e293b)](https://github.com/lazyshrey/MeshUtility/releases)
 
 </div>
 
@@ -35,13 +35,7 @@ MeshUtility is a tray-resident desktop app combining two powerful tools:
 
 ### Main Window
 
-<img src=".github/assets/main_window.svg" width="800" alt="MeshUtility Dashboard" />
-
-<br/>
-
-### Prompt Enhancer
-
-<img src=".github/assets/prompt_enhancer.svg" width="800" alt="MeshPrompt Enhancer" />
+<img src=".github/assets/main_window.png" width="800" alt="MeshUtility Dashboard" />
 
 <br/>
 
@@ -101,7 +95,7 @@ macOS and Linux are partially supported. Some audio backend features may behave 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Jenesh11/MeshUtility.git
+git clone https://github.com/lazyshrey/MeshUtility.git
 cd MeshUtility
 ```
 
@@ -134,41 +128,6 @@ npm run tauri build
 ```
 
 The installer and portable `.exe` are placed in `src-tauri/target/release/bundle/`.
-
----
-
-## Project Structure
-
-```
-MeshUtility/
-├── src/                          # React + TypeScript frontend
-│   ├── App.tsx                   # Main window shell and sidebar navigation
-│   ├── WidgetApp.tsx             # Floating pill widget root
-│   ├── components/
-│   │   ├── Dashboard.tsx         # Dictation history and stats
-│   │   ├── PromptApp.tsx         # Prompt enhancer — full UI
-│   │   ├── Settings.tsx          # Voice settings, hotkey, model, mic
-│   │   ├── Widget.tsx            # Pill widget state machine (embedded view)
-│   │   ├── DictionaryEditor.tsx  # Custom pronunciation dictionary
-│   │   └── ResultPopup.tsx       # Transcription result popup card
-│   ├── store/
-│   │   └── appStore.ts           # Zustand state for recording and history
-│   ├── lib/                      # Prompt enhancer logic: actions, client, types
-│   └── styles-prompt.css         # Design tokens and component styles
-├── src-tauri/                    # Rust backend (Tauri 2)
-│   ├── src/
-│   │   ├── main.rs               # App setup, commands, tray, shortcuts
-│   │   ├── audio.rs              # CPAL audio capture and level emission
-│   │   ├── transcription.rs      # Whisper and sherpa-onnx inference
-│   │   ├── db.rs                 # SQLite — history, settings, dictionary
-│   │   ├── injection.rs          # Text injection via clipboard and enigo
-│   │   └── clipboard.rs          # Clipboard read/write with canary detection
-│   └── tauri.conf.json           # Window definitions, deep-link schemes, icons
-├── public/                       # Static assets — logos, icons
-├── index.html                    # Main window entry
-├── widget.html                   # Widget window entry
-└── overlay.html                  # Overlay window entry
-```
 
 ---
 
