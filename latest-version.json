@@ -1,0 +1,5 @@
+{
+  "version": "v1.0.9",
+  "changelog": "Enables rate-limit resilient updates, scrollbar removal, and dynamically themed startup loading screen.",
+  "downloadUrl": "https://github.com/MeshPilot-in/MeshUtility/releases/download/v1.0.9/MeshUtility_1.0.9_x64_en-US.msi"
+}

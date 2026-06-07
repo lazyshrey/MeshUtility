@@ -1014,17 +1014,61 @@ async fn check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> 
     let res = client
         .get("https://api.github.com/repos/MeshPilot-in/MeshUtility/releases")
         .send()
-        .await
-        .map_err(|e| format!("Network error checking for updates: {e}"))?;
+        .await;
 
-    if !res.status().is_success() {
-        return Err(format!("GitHub API returned error: {}", res.status()));
+    let mut use_fallback = false;
+    let mut releases_json = None;
+
+    match res {
+        Ok(res_val) => {
+            if res_val.status().is_success() {
+                if let Ok(json) = res_val.json::<serde_json::Value>().await {
+                    releases_json = Some(json);
+                } else {
+                    use_fallback = true;
+                }
+            } else {
+                use_fallback = true;
+            }
+        }
+        Err(_) => {
+            use_fallback = true;
+        }
     }
 
-    let releases: serde_json::Value = res
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse releases metadata: {e}"))?;
+    if use_fallback {
+        let fallback_url = "https://raw.githubusercontent.com/MeshPilot-in/MeshUtility/main/latest-version.json";
+        let fb_res = client
+            .get(fallback_url)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to check for updates (GitHub API rate limit exceeded & fallback failed): {e}"))?;
+
+        if !fb_res.status().is_success() {
+            return Err(format!("GitHub API rate limit exceeded and fallback returned: {}", fb_res.status()));
+        }
+
+        let fb_data: serde_json::Value = fb_res
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse fallback metadata: {e}"))?;
+
+        let tag_name = fb_data["version"].as_str().ok_or("Invalid fallback version")?.to_string();
+        let changelog = fb_data["changelog"].as_str().unwrap_or("No release notes provided.").to_string();
+        let download_url = fb_data["downloadUrl"].as_str().unwrap_or("").to_string();
+
+        let current_version = app.package_info().version.to_string();
+        let update_available = is_newer_version(&current_version, &tag_name);
+
+        return Ok(UpdateCheckResult {
+            update_available,
+            version: tag_name,
+            changelog,
+            download_url,
+        });
+    }
+
+    let releases = releases_json.ok_or("No releases metadata available")?;
 
     let releases_arr = releases.as_array().ok_or("Invalid releases list")?;
 
