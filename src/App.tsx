@@ -5,6 +5,7 @@ import {
   BookOpen,
   ClipboardList,
   Clock3,
+  Info,
   KeyRound,
   Mic2,
   PanelLeft,
@@ -18,6 +19,7 @@ import { Settings } from './components/Settings'
 import { DictionaryEditor } from './components/DictionaryEditor'
 import { MainApp as PromptApp } from './components/PromptApp'
 import { AppearanceView } from './components/AppearanceView'
+import { AboutView } from './components/AboutView'
 import { VersionWidget } from './components/VersionWidget'
 import { UpdateWidget } from './components/UpdateWidget'
 import { applyStoredTheme } from './lib/appearance'
@@ -36,6 +38,7 @@ type View =
   | 'prompt-providers'
   | 'prompt-settings'
   | 'appearance'
+  | 'about'
 
 interface NavItem {
   id: View
@@ -71,6 +74,7 @@ const GROUPS: NavGroup[] = [
       { id: 'prompt-providers', label: 'AI Providers', icon: <KeyRound size={15} strokeWidth={1.8} /> },
       { id: 'prompt-settings', label: 'Enhancer Settings', icon: <Settings2 size={15} strokeWidth={1.8} /> },
       { id: 'appearance', label: 'Appearance', icon: <Palette size={15} strokeWidth={1.8} /> },
+      { id: 'about', label: 'About', icon: <Info size={15} strokeWidth={1.8} /> },
     ],
   },
 ]
@@ -290,6 +294,9 @@ export default function App() {
           </div>
           <div style={{ display: view === 'appearance' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
             <AppearanceView />
+          </div>
+          <div style={{ display: view === 'about' ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+            <AboutView />
           </div>
 
           <div
