@@ -8,9 +8,195 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <title>MeshUtility</title>
+    
+    <script>
+      (function() {
+        const themes = {
+          'default': { bg: 'oklch(0.1913 0 0)', start: 'oklch(0.24 0 0)', end: 'oklch(0.15 0 0)', text: 'oklch(0.9173 0.0133 82.4015)', accent: 'oklch(0.8520 0.0205 100.6306)', sub: 'oklch(0.6348 0.0113 81.7875)', glow: 0.12 },
+          'void': { bg: '#0a0a0a', start: '#161616', end: '#050505', text: '#ffffff', accent: '#ffffff', sub: '#888888', glow: 0.1 },
+          'mecha': { bg: '#181b1f', start: '#22262c', end: '#101215', text: '#cbd5e1', accent: '#eab308', sub: '#94a3b8', glow: 0.15 },
+          'nord': { bg: '#2e3440', start: '#3b4252', end: '#242933', text: '#eceff4', accent: '#88c0d0', sub: '#d8dee9', glow: 0.12 },
+          'tokyo-night': { bg: '#1a1b26', start: '#242636', end: '#10111a', text: '#c0caf5', accent: '#7aa2f7', sub: '#a9b1d6', glow: 0.15 },
+          'catppuccin-mocha': { bg: '#1e1e2e', start: '#28283d', end: '#141420', text: '#cdd6f4', accent: '#cba6f7', sub: '#a6adc8', glow: 0.15 },
+          'gruvbox': { bg: '#282828', start: '#3c3836', end: '#1d2021', text: '#ebdbb2', accent: '#fabd2f', sub: '#a89984', glow: 0.15 },
+          'rose-pine': { bg: '#191724', start: '#26233a', end: '#12101a', text: '#e0def4', accent: '#c4a7e7', sub: '#908caa', glow: 0.12 },
+          'one-dark': { bg: '#282c34', start: '#30353f', end: '#1e2025', text: '#abb2bf', accent: '#61afef', sub: '#7f848e', glow: 0.12 },
+          'slate': { bg: '#3b4049', start: '#454b56', end: '#2d3138', text: '#e9ecf1', accent: '#7dd3fc', sub: '#aab2c0', glow: 0.15 },
+          'driftwood': { bg: '#45403a', start: '#504a43', end: '#35312c', text: '#f2ede5', accent: '#e0a458', sub: '#c8bdb0', glow: 0.12 },
+          'sage': { bg: '#3c443e', start: '#464f48', end: '#2d332f', text: '#e9f0ea', accent: '#86c79a', sub: '#afbdb2', glow: 0.12 },
+          'dusk': { bg: '#403b48', start: '#4a4454', end: '#312d38', text: '#ece8f1', accent: '#c4a7e7', sub: '#b9b1c6', glow: 0.15 },
+          'github-light': { bg: '#ffffff', start: '#ffffff', end: '#f6f8fa', text: '#1f2328', accent: '#0969da', sub: '#656d76', glow: 0.05 },
+          'catppuccin-latte': { bg: '#eff1f5', start: '#eff1f5', end: '#ccd0da', text: '#4c4f69', accent: '#8839ef', sub: '#6c6f85', glow: 0.06 },
+          'solarized-light': { bg: '#fdf6e3', start: '#fdf6e3', end: '#eee8d5', text: '#073642', accent: '#268bd2', sub: '#586e75', glow: 0.05 }
+        };
+
+        const themeId = localStorage.getItem('meshutility-theme-id') || 'default';
+        const theme = themes[themeId] || themes['default'];
+        
+        const root = document.documentElement;
+        root.style.setProperty('--bg-color', theme.bg);
+        root.style.setProperty('--bg-gradient-start', theme.start);
+        root.style.setProperty('--bg-gradient-end', theme.end);
+        root.style.setProperty('--text-color', theme.text);
+        root.style.setProperty('--accent-color', theme.accent);
+        root.style.setProperty('--sub-color', theme.sub);
+        root.style.setProperty('--glow-opacity', theme.glow);
+      })();
+    </script>
+
+    <style>
+      /* Prevent default margins and scrollbars on startup */
+      * {
+        box-sizing: border-box;
+      }
+      html, body, #root {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        background-color: var(--bg-color) !important;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Noto Sans', sans-serif;
+        color: var(--text-color);
+        user-select: none;
+        overflow: hidden;
+      ">
+        <div style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 24px;
+        ">
+          <!-- Logo container with pulsing/glowing effect -->
+          <div style="
+            position: relative;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            <!-- Subtle backdrop glow -->
+            <div style="
+              position: absolute;
+              width: 120px;
+              height: 120px;
+              background: radial-gradient(circle, var(--accent-color) 0%, transparent 70%);
+              opacity: var(--glow-opacity);
+              filter: blur(10px);
+              pointer-events: none;
+            "></div>
+
+            <!-- Outer slow spinning ring -->
+            <div style="
+              position: absolute;
+              width: 90px;
+              height: 90px;
+              border-radius: 50%;
+              border: 1px solid color-mix(in oklab, var(--text-color) 6%, transparent);
+              border-top: 1px solid var(--accent-color);
+              animation: spin-loader-reverse 3s linear infinite;
+            "></div>
+
+            <!-- Inner fast spinning ring -->
+            <div style="
+              position: absolute;
+              width: 76px;
+              height: 76px;
+              border-radius: 50%;
+              border: 2px solid color-mix(in oklab, var(--text-color) 12%, transparent);
+              border-top: 2px solid var(--accent-color);
+              animation: spin-loader 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            "></div>
+
+            <!-- High-tech logo image to ensure branding consistency -->
+            <img src="/logo-prompt.png" alt="MeshUtility" style="
+              width: 44px;
+              height: 44px;
+              border-radius: 8px;
+              object-fit: cover;
+              z-index: 10;
+              filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.25));
+            " />
+          </div>
+
+          <!-- Title with premium typography -->
+          <div style="text-align: center; margin-top: 4px;">
+            <h1 style="
+              font-size: 22px;
+              font-weight: 700;
+              letter-spacing: 0.05em;
+              margin: 0;
+              color: var(--text-color);
+              text-transform: uppercase;
+              text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            ">MeshUtility</h1>
+            <span style="
+              font-size: 10px;
+              font-weight: 600;
+              letter-spacing: 0.35em;
+              text-transform: uppercase;
+              color: var(--sub-color);
+              margin-top: 6px;
+              margin-left: 0.35em;
+              display: block;
+            ">Suite</span>
+          </div>
+
+          <!-- Custom premium loading indicator -->
+          <div style="
+            width: 140px;
+            height: 2px;
+            background: color-mix(in oklab, var(--text-color) 8%, transparent);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 8px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+          ">
+            <div style="
+              width: 60px;
+              height: 100%;
+              background: linear-gradient(90deg, transparent, var(--accent-color), var(--text-color), var(--accent-color), transparent);
+              border-radius: 99px;
+              position: absolute;
+              animation: load-slide 1.8s ease-in-out infinite;
+            "></div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+        @keyframes spin-loader {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes spin-loader-reverse {
+          0% { transform: rotate(360deg); }
+          100% { transform: rotate(0deg); }
+        }
+        @keyframes load-slide {
+          0% { left: -60px; }
+          100% { left: 140px; }
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "MeshUtility",
-  "version": "1.0.6",
+  "version": "1.0.9",
   "identifier": "com.meshpilot.meshutility",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -48,8 +48,8 @@
         "label": "overlay",
         "title": "MeshPrompt Overlay",
         "url": "/overlay.html",
-        "width": 500,
-        "height": 230,
+        "width": 480,
+        "height": 180,
         "resizable": false,
         "decorations": false,
         "alwaysOnTop": true,

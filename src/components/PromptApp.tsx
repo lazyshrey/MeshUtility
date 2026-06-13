@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   Wand2,
+  X,
 } from "lucide-react";
 import {
   builtInPromptActions,
@@ -612,7 +613,7 @@ export function OverlayApp() {
         setOutput("");
         setPhase("picker");
         setStatus("Text captured");
-        void invoke("resize_overlay", { width: 500, height: 230 }).catch(() => {});
+        void invoke("resize_overlay", { width: 480, height: 180 }).catch(() => {});
       }
     });
     const captured = listen<string>("meshprompt://captured-text", (event) => {
@@ -634,12 +635,12 @@ export function OverlayApp() {
       setOutput("");
       setPhase("picker");
       setStatus("Text captured");
-      void invoke("resize_overlay", { width: 500, height: 230 }).catch(() => {});
+      void invoke("resize_overlay", { width: 480, height: 180 }).catch(() => {});
     });
     const captureError = listen<string>("meshprompt://capture-error", (event) => {
       setStatus(event.payload ?? "No selected text found. Paste text below.");
       setPhase("picker");
-      void invoke("resize_overlay", { width: 500, height: 230 }).catch(() => {});
+      void invoke("resize_overlay", { width: 480, height: 180 }).catch(() => {});
     });
     return () => {
       void captured.then((off) => off());
@@ -708,7 +709,7 @@ export function OverlayApp() {
     }
     setPhase("processing");
     setStatus(action.label);
-    void invoke("resize_overlay", { width: 500, height: 230 }).catch(() => {});
+    void invoke("resize_overlay", { width: 480, height: 180 }).catch(() => {});
     try {
       const response = await generateWithCurrentProvider(settings, action.id, selectedText);
       
@@ -736,7 +737,7 @@ export function OverlayApp() {
         setOutput(response.content);
         setPhase("result");
         setStatus(`Replace failed. Copied instead. ${errorMessage(error)}`);
-        void invoke("resize_overlay", { width: 500, height: 440 }).catch(() => {});
+        void invoke("resize_overlay", { width: 480, height: 380 }).catch(() => {});
       }
     } catch (error: any) {
       setPhase("picker");
@@ -764,15 +765,41 @@ export function OverlayApp() {
     }
   }
 
+  const isErrorStatus = status && (
+    status.toLowerCase().includes("fail") || 
+    status.toLowerCase().includes("error") || 
+    status.toLowerCase().includes("timed out") || 
+    status.toLowerCase().includes("no selected text") ||
+    status.toLowerCase().includes("invalid")
+  );
+
+  const displaySubtitle = phase === "result" 
+    ? "Result" 
+    : ((status && status !== "Select an action" && status !== "Output ready") 
+        ? status 
+        : "Improve selected text");
+
   return (
     <div className="overlay-shell meshprompt-theme">
       <div className="overlay-card">
         <div className="overlay-top" data-tauri-drag-region>
           <div data-tauri-drag-region>
             <span className="eyebrow" data-tauri-drag-region>MESHUTILITY</span>
-            <h2 data-tauri-drag-region>{phase === "result" ? "Result" : "Improve selected text"}</h2>
+            <h2 
+              data-tauri-drag-region 
+              style={{ 
+                color: isErrorStatus ? "var(--error)" : "var(--text-primary)",
+                transition: "color 0.15s ease"
+              }}
+            >
+              {displaySubtitle}
+            </h2>
           </div>
-          <button className="mac-dot close" data-no-drag onClick={() => invoke("hide_overlay")} aria-label="Close"></button>
+          <button className="overlay-close-btn" data-no-drag onClick={() => invoke("hide_overlay")} aria-label="Close">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
 
         {phase !== "result" && (
@@ -827,10 +854,6 @@ export function OverlayApp() {
               <button onClick={() => invoke("hide_overlay")} style={{ cursor: 'pointer' }}>Close</button>
             </div>
           </>
-        )}
-
-        {status && status !== "Select an action" && status !== "Output ready" && (
-          <div className="overlay-status short-error-badge">{status}</div>
         )}
       </div>
     </div>
